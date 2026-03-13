@@ -299,27 +299,36 @@ $$
 ### **5.1.5 Parameterized Interventions**
 
 $$
-E_{A,\theta}(p) = p + \theta a,
+E_{A,\theta_1}(p) = p + \theta_1 a,
 \qquad
-E_{B,\theta}(p) = B(\theta) p.
+E_{B,\theta_2}(p) = (I + \theta_2 M)\, p,
 $$
+
+where $a \in \mathbb{R}^d$ is a fixed sparse vector ($a_i = 1$ for $i < d/4$, else $0$) and $M \in \mathbb{R}^{d \times d}$ is a fixed random matrix.
+The optimization parameter is $\theta = (\theta_1, \theta_2) \in \mathbb{R}^2$.
+This instantiates $B(\theta_2) = I + \theta_2 M$, a scalar parameterization of the linear operator family.
 
 ### **5.1.6 Simulation Procedure**
 
-- sample p_0  
-- apply U and E  
-- compute y_T  
-- evaluate  
+1. Fix ground-truth parameter $\theta^* = (1, 1)$ and generate target trajectory $z_{\text{target}} = \{C\, p_t^*\}_{t=0}^{T}$ via rollout with $\theta^*$.
+2. For each candidate $\theta \in \Theta$, run rollout: $p_0 \sim \mathcal{N}(0, I)$, apply $U$ and $E$ per schedule, record $\{z_t(\theta)\}$.
+3. Evaluate
 $$
-J(\theta) = y_T - y_{\text{target}}^2
+J(\theta) = \frac{1}{T+1}\sum_{t=0}^{T}\| z_t(\theta) - z_t^{\text{target}} \|^2.
 $$
 
 ### **5.1.7 Smoothing**
 
 Compare:
 
-- non-smoothed $J(\theta)$  
+- non-smoothed $J(\theta)$
 - smoothed $J_\varepsilon(\theta)$
+
+**Implementation note.**
+The theoretical mollifier $f_{E,t,\varepsilon} = f_{E,t} * \rho_\varepsilon$ (§3.2) is defined as convolution over the parameter domain $\Theta$.
+In practice, we approximate this by applying temporal smoothing to the observable trajectory $\{z_t\}_{t=0}^{T}$ via a 1D convolution kernel along the time axis.
+While this differs from the parameter-space mollification analyzed in §3.2 and Appendix A.2, it serves as a computationally tractable proxy that regularizes the effective loss landscape and stabilizes gradients.
+The smoothed loss is $J_\varepsilon(\theta) = \| \tilde{z}(\theta) - z_{\text{target}} \|^2$ where $\tilde{z}(\theta)$ denotes the temporally smoothed trajectory; the target $z_{\text{target}}$ is not smoothed, consistent with the definition in §4.1.
 
 ### **5.1.8 Expected Phenomena Prior to Experiments**
 

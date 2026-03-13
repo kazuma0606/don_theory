@@ -25,13 +25,12 @@
 
 **投稿前の必須条件:**
 1. `verify/tasks.md` A2（Layer4 正則性・最適化理論）完了 or A1'（W^{2,∞} 仮定明示）選択
-2. `verify/tasks.md` E2.1 — 実験 4 本の実装と結果記述
-3. `verify/tasks.md` E2.2〜E2.4 — Discussion・References 完成
-4. `verify/tasks.md` E1.1 — Appendix A に Lean4 コード統合
+2. `experience/tasks.md` 1–4 — 実験 4 本の実装と結果記述
+3. `experience/tasks.md` 5 — 論文への統合（Discussion・References・Appendix A）
 
 **投稿可能な最短ルート（A1' 選択時）:**
 ```
-A1' 選択 → A2.1〜A2.4 → E2.1（実験）→ E2.2〜E2.4 → E1.1 → arXiv 投稿
+A1' 選択 → verify: A2.1〜A2.4 → experience: 0〜4（実験）→ experience: 5（論文統合）→ arXiv 投稿
 ```
 
 ---
