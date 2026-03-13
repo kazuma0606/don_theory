@@ -11,19 +11,20 @@
 ```
 ✅ 実験の要件定義（exp01.md）
 ✅ Claude Code 向け実装仕様書（exp02.md）
+✅ §0 共通コンポーネント（common.py）— CUDA サニティチェック通過
 ```
 
 ---
 
 ## 0. 共通コンポーネントの実装
 
-- [ ] 0.0 CUDA デバイス設定（`device = torch.device("cuda")`）・全テンソル/モジュールの `.to(device)` 統一
-- [ ] 0.1 `Dynamics` クラス（`p_{t+1} = B(tanh(A(p_t)))`）
-- [ ] 0.2 介入 `E1`（加算型）/ `E2`（線形変換型）
-- [ ] 0.3 観測関数 `observe()`（`C: ℝ^d → ℝ^q`, q=8）
-- [ ] 0.4 `rollout(p0, theta, dynamics, schedule, T)`
-- [ ] 0.5 `smooth_time(zs, kernel)`（時間方向 1D 畳み込み）
-- [ ] 0.6 損失関数：`loss_raw()` / `loss_smooth()`
+- [x] 0.0 CUDA デバイス設定（`device = torch.device("cuda")`）・全テンソル/モジュールの `.to(device)` 統一
+- [x] 0.1 `Dynamics` クラス（`p_{t+1} = linear(p) + gamma*tanh(W(p))`）
+- [x] 0.2 介入 `E1`（加算型）/ `E2`（線形変換型）
+- [x] 0.3 観測関数 `build_observer()`（`C: ℝ^d → ℝ^q`, q=8）
+- [x] 0.4 `rollout(p0, theta, dynamics, schedule, T)`
+- [x] 0.5 `smooth_time(zs, kernel)`（時間方向 1D 畳み込み）
+- [x] 0.6 損失関数：`loss_raw()` / `loss_smooth()`
 
 ---
 

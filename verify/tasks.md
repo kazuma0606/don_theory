@@ -71,9 +71,13 @@
 
 ### B1–B3. 論文への Lean4 verified バッジ付与
 
-- [ ] B1.1 Layer 1 の各定理に "*(Lean 4 verified)*" を追記
-- [ ] B2.1 Layer 2（Banach 空間）に "*(Lean 4 verified)*" を追記
-- [ ] B2.2 §3.3（拡張ノルム問題）を削除
+- [x] B1.1 Layer 1 の各定理に "*(Lean 4 verified)*" を追記
+  - 定理 M（非可換モノイド）← Monoid instance + `noncomm_exists`
+  - 命題 1（群ではないこと）← `no_inverse`
+- [x] B2.1 Layer 2（Banach 空間）に "*(Lean 4 verified)*" を追記
+  - 補題 1（ノルム公理）← `medicusNorm_pos_def` / `medicusNorm_smul` / `medicusNorm_triangle`
+  - 定理 1（Banach 空間）← `medicusMin_complete`
+- [x] B2.2 §3.3（拡張ノルム問題）を削除 — Shannon エントロピー項の未解決問題ごと削除
 - [ ] B3.1 Layer 3（Mollifier）に "*(Lean 4 verified)*" を追記（A1/A1' に依存）
 - [ ] B3.2 §4.2 に Lean コード断片を掲載
 
@@ -106,16 +110,22 @@
 
 ## 優先順と依存関係
 
+> **現在の方針（2026-03-13）:** P1（本研究論文）を優先。
+> P1 の arXiv 投稿完了後に P2（B シリーズ）・P3（D シリーズ）を再開する。
+> P1 の残タスクは `experience/tasks.md` §0〜6（実験実装・論文統合）のみ。
+
 ```
-【本研究 manuscript_v_20260313.md】
-A1 or A1' ──→ B3.1（Corollary 1 verified バッジ）
-A2.1 → A2.2 → A2.3 → A2.4
+【P1: 本研究 manuscript_v_20260313.md】← 現在優先
+✅ A1' 選択済み
+✅ A2.1 → A2.2 → A2.3 → A2.4 完了
+→ experience/tasks.md §0〜6（実験実装）が残課題
 
-【旧 MEDICUS SUBMISSION_CANDIDATE_report_v3_math.md】
-B1.1, B2.1 ──→ B6.1 → B6.2
-B5.1〜B5.3 ──→ B4.3 → B4.5
+【P2: 旧 MEDICUS — P1 完了後に再開】
+✅ B1.1, B2.1, B2.2 完了
+B3.1, B3.2 → B4 → B5 → B6.1 → B6.2
 
-D1, D2 ─── 独立（いつでも並行可）
+【P3: 第二論文 — P1 or P2 完了後】
+D1, D2 ─── 独立
 ```
 
 ---
