@@ -198,8 +198,13 @@ def build_default_kernel() -> torch.Tensor:
     return (w / w.sum()).to(device)
 
 
-def build_target(dynamics: nn.Module, observe, C_obs: nn.Module = None):
+def build_target(dynamics: nn.Module, observe, d: int = None, C_obs: nn.Module = None):
     """θ* でのターゲット軌跡・固定初期状態・E1/E2 を構築して返す。
+
+    Args:
+        dynamics : Dynamics インスタンス
+        observe  : 観測関数
+        d        : 状態次元（省略時は cfg["state_dim"]）
 
     Returns:
         p0_fixed  : shape (batch, d), device=cuda
@@ -209,7 +214,7 @@ def build_target(dynamics: nn.Module, observe, C_obs: nn.Module = None):
         schedule  : DEFAULT_SCHEDULE
         kernel    : デフォルトカーネル
     """
-    d      = cfg["state_dim"]
+    d      = d if d is not None else cfg["state_dim"]
     T      = cfg["T"]
     batch  = cfg["batch"]
 
@@ -267,6 +272,26 @@ def loss_smooth(
     zs   = rollout(p0, theta, dynamics, schedule, T, observe)
     zs_s = smooth_time(zs, kernel)
     return ((zs_s - zs_target) ** 2).mean()
+
+
+def loss_smooth_sym(
+    theta: torch.Tensor,
+    p0: torch.Tensor,
+    zs_target: torch.Tensor,
+    dynamics: nn.Module,
+    schedule: dict,
+    T: int,
+    observe,
+    kernel: torch.Tensor,
+) -> torch.Tensor:
+    """両側平滑損失 J_ε_sym(θ) = mean‖smooth(z(θ)) - smooth(z_target)‖²
+    ターゲットも同じ kernel で平滑化することでバイアスを除去する。
+    theta = theta* で loss = 0 になる。
+    """
+    zs     = rollout(p0, theta, dynamics, schedule, T, observe)
+    zs_s   = smooth_time(zs, kernel)
+    zst_s  = smooth_time(zs_target, kernel)
+    return ((zs_s - zst_s) ** 2).mean()
 
 
 # ============================================================
