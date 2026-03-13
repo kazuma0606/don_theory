@@ -4,7 +4,12 @@
       "Bash(find \"C:/Users/yoshi/don_theory/verify/lean4/.lake/packages/mathlib\" -name \"*.lean\" | xargs grep -l \"integral_mul_deriv\\\\|integral_by_parts\\\\|integralByParts\\\\|integral_parts\" 2>/dev/null | head -10)",
       "Bash(cd \"C:/Users/yoshi/don_theory/verify/lean4\" && lake build MedicusVerify.Layer4Regularity 2>&1)",
       "Bash(cd \"C:/Users/yoshi/don_theory/verify/lean4\" && lake build MedicusVerify 2>&1)",
-      "Bash(find \"C:/Users/yoshi/don_theory\" -name \"SUBMISSION_CANDIDATE*\" 2>/dev/null; find \"C:/Users/yoshi/don_theory\" -name \"*.md\" | grep -v \".lake\" | head -20)"
+      "Bash(find \"C:/Users/yoshi/don_theory\" -name \"SUBMISSION_CANDIDATE*\" 2>/dev/null; find \"C:/Users/yoshi/don_theory\" -name \"*.md\" | grep -v \".lake\" | head -20)",
+      "Bash(cd C:\\\\Users\\\\yoshi\\\\don_theory\\\\experience && uv sync 2>&1)",
+      "Read(//mnt/c/Users/yoshi/don_theory/**)",
+      "Bash(uv sync:*)",
+      "Bash(nvcc --version 2>&1 | head -3; nvidia-smi --query-gpu=name,driver_version,compute_cap --format=csv,noheader 2>&1 | head -3)",
+      "Bash(uv run:*)"
     ]
   }
 }
