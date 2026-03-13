@@ -42,6 +42,35 @@ Four computational experiments are specified in `futere_work.md` (PyTorch):
 
 When implementing these experiments, use `futere_work.md` as the authoritative specification for function signatures, tensor shapes, and algorithm steps.
 
+## Project Management
+
+- `master_schedule.md` — 投稿先・投稿タイミング・論文間の依存関係など、全体スケジュールを管理
+- `verify/tasks.md` — Lean4 証明作業と論文の技術的記述タスクのみを管理（投稿スケジュールは含まない）
+
+## Formal Verification (verify/)
+
+Lean 4 proofs ported from a prior related project. The math maps directly to this research:
+
+- `verify/lean4/MedicusVerify/Layer1Monoid.lean` — Non-commutativity monoid: `noncomm_exists`, `no_inverse`
+- `verify/lean4/MedicusVerify/Layer2Banach.lean` — W^{1,∞} Banach space (`MedicusMin`): norm axioms + completeness (sorry-free)
+- `verify/lean4/MedicusVerify/Layer3Mollifier.lean` — Mollifier: C∞ smoothness, pointwise convergence, M₀-norm convergence (W^{2,∞} assumption on `deriv f`)
+- `verify/lean4/MedicusVerify/Basic.lean` — Abstract axioms (`state_dependent`, `irreversible`)
+
+The namespaces use `MedicalIntervention` / `MedicusMin` from the prior clinical project, but the math is identical to the current framework's `E: P → P` and `W^{1,∞}`.
+
+**Build:** `cd verify/lean4 && lake build` (requires Lean 4 + Mathlib v4.28.0)
+
+Remaining open task: removing the W^{2,∞} assumption in `mollifier_converges` via integration-by-parts (convolution/deriv commutativity). See `verify/tasks.md` task A1.
+
+## Visualization (visualization/)
+
+Python scripts (run with `uv run python`):
+
+- `noncommutativity.py` — Visualizes `E_a ∘ E_b ≠ E_b ∘ E_a` using a 3D clinical state model (tumor/immune/tissue); generates figures 01–03
+- `mollifier.py` — Mollifier kernel shape, C∞ smoothing of step functions, and `‖f_ε - f‖_∞ → 0` convergence; generates figures 04–06
+
+Run all: `uv run python run_all.py` → outputs PNG files to `img/`.
+
 ## Paper Target
 
 The manuscript targets top-tier ML venues (NeurIPS/ICML/ICLR). The theoretical contribution is domain-agnostic but motivated by clinical intervention sequencing.
