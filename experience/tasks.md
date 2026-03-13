@@ -32,15 +32,11 @@
 
 **目的:** 非平滑では発散・不安定、平滑では安定収束することを示す
 
-- [ ] 1.1 実験の実装
-  - d=64, T=20, q=8
-  - 初期値を 20 通りサンプリング
-  - Adam lr=1e-2 で θ を最適化（平滑あり・なし）
-- [ ] 1.2 評価指標の計算・保存
-  - 収束率
-  - 最終損失の分散
-  - 勾配ノルムの推移
-- [ ] 1.3 図の生成（損失曲線・勾配ノルム推移）
+- [x] 1.1 実験の実装（exp01.py）
+- [x] 1.2 評価指標の計算・保存（exp1_steps.csv, exp1_summary.csv）
+  - raw: conv_rate=16/20 (80%), loss→0, ||theta-theta*||=0.037±0.059
+  - smooth: loss floor≈0.0104 (smoothing bias), ||theta-theta*||=0.458±0.088 → Exp5 で ε→0 収束を検証
+- [x] 1.3 図の生成（exp1_loss_curves.png, exp1_theta_dist.png, exp1_grad_norms.png）
 
 ---
 
