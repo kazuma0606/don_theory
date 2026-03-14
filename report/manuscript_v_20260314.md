@@ -139,7 +139,7 @@ U_t : P \to P,
 U_{t+s} = U_t \circ U_s.
 $$
 
-The semigroup property $U_{t+s} = U_t \circ U_s$ situates time evolution within the classical theory of strongly continuous (C₀) semigroups on Banach spaces [32, 33]. The generator of $\{U_t\}$ characterizes the infinitesimal rate of change of the state, and the semigroup formalism provides a rigorous foundation for the stability analysis invoked in Assumption 4.
+The semigroup property $U_{t+s} = U_t \circ U_s$ situates time evolution within the classical theory of strongly continuous ($C_0$) semigroups on Banach spaces [32, 33]. The generator of $\{U_t\}$ characterizes the infinitesimal rate of change of the state, and the semigroup formalism provides a rigorous foundation for the stability analysis invoked in Assumption 4.
 
 ## **2.6 Time-Indexed Interventions**
 
@@ -284,7 +284,7 @@ p_t \in \mathbb{R}^{64}.
 $
 
 This reflects the inherently high-dimensional nature of real patient states
-(Dimensions ranging from 32 to 256 are established as typical latent spaces in prior research [5, 6].)。
+(Dimensions ranging from 32 to 256 are established as typical latent spaces in prior research [5, 6].).
 
 ### **5.1.2 Time Evolution Dynamics**
 
@@ -382,7 +382,7 @@ trajectories (step difference $\leq 2$ across all 20 initializations).
 The same 4 initializations fail to converge under both conditions.
 
 The primary distinction is observed in the step-to-step gradient norm variation
-$|\Delta\|\nabla J\||$: this quantity is consistently smaller under $J_{\varepsilon,\text{sym}}$
+$|\Delta\|\nabla J\|$: this quantity is consistently smaller under $J_{\varepsilon,\text{sym}}$
 than under $J$ across all optimization steps (Fig. 09).
 This finding provides numerical evidence consistent with the Lipschitz-continuous gradient
 established in the Lean 4 proof of Layer 3 (Fréchet differentiability of the mollified observable).

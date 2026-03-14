@@ -452,7 +452,7 @@ def math_to_unicode(expr: str) -> str:
         (r'\\tau', 'τ'), (r'\\omega', 'ω'), (r'\\Omega', 'Ω'),
         (r'\\nabla', '∇'), (r'\\Delta', 'Δ'), (r'\\partial', '∂'),
         # Operators and relations
-        (r'\\infty', '∞'), (r'\\to', '→'), (r'\\mapsto', '↦'),
+        (r'\\infty', '∞'), (r'\\to', '->'), (r'\\mapsto', '|->'),
         (r'\\leq', '≤'), (r'\\geq', '≥'),
         (r'\\le\b', '≤'), (r'\\ge\b', '≥'),   # \le / \ge without q
         (r'\\neq', '≠'), (r'\\approx', '≈'), (r'\\sim', '~'),
@@ -463,13 +463,13 @@ def math_to_unicode(expr: str) -> str:
         (r'\\in\b', '∈'), (r'\\subset', '⊂'),
         (r'\\cup', '∪'), (r'\\cap', '∩'),
         (r'\\forall', '∀'), (r'\\exists', '∃'),
-        (r'\\langle', '⟨'), (r'\\rangle', '⟩'),
+        (r'\\langle', '('), (r'\\rangle', ')'),   # ⟨⟩ は Arial 未収録 → ()
         # Norm delimiters — most specific first, then plain \|
         # CRITICAL: r'\\\|' matches the two-char sequence backslash+pipe.
         # Do NOT use r'\\|' here — in regex that means "backslash OR empty string".
-        (r'\\left\s*\\\|', '‖'),    # \left\|
-        (r'\\right\s*\\\|', '‖'),   # \right\|
-        (r'\\\|', '‖'),              # plain \|
+        (r'\\left\s*\\\|', '||'),   # \left\|  → ||  (‖ U+2016 は Arial 未収録)
+        (r'\\right\s*\\\|', '||'),  # \right\|
+        (r'\\\|', '||'),             # plain \|
         (r'\\left', ''), (r'\\right', ''),
         # Braced font/text commands
         (r'\\mathrm\{([^}]+)\}', r'\1'),
@@ -659,7 +659,9 @@ def parse_markdown(md_text: str, styles: dict) -> list:
 
             style_key = {1: "h1", 2: "h2", 3: "h3"}.get(level, "h2")
             flowables.append(Spacer(1, 3*mm))
-            flowables.append(Paragraph(escape_xml(heading), styles[style_key]))
+            # process_inline を使うことで $...$ のインライン数式レンダリングと
+            # U+2011 ノンブレークハイフンの正規化も行う
+            flowables.append(Paragraph(process_inline(heading), styles[style_key]))
             i += 1
             continue
 
