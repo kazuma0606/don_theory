@@ -24,9 +24,9 @@ These examples illustrate a universal structural property:
 
 > **Interventions and time evolution interact in a fundamentally non‑commutative manner.**
 
-Despite the ubiquity of such systems, optimizing intervention parameters remains difficult.  
-Most machine‑learning methods rely on differentiable objectives, yet intervention sequences induce discrete, non‑smooth, and non‑commutative operator compositions.  
-Reinforcement learning handles such systems but lacks differentiability; control theory assumes smooth dynamics; neural ODEs assume commutative flows.
+Despite the ubiquity of such systems, optimizing intervention parameters remains difficult.
+Most machine‑learning methods rely on differentiable objectives, yet intervention sequences induce discrete, non‑smooth, and non‑commutative operator compositions.
+Reinforcement learning handles such systems but lacks differentiability [1, 2]; control theory assumes smooth dynamics [3]; neural ODEs assume commutative flows [4].
 
 We introduce a functional‑analytic framework that models interventions, time evolution, and observations as operators acting on high‑dimensional belief states.  
 By embedding intervention‑induced observables into $W^{1,\infty}$ and applying mollifier smoothing, we obtain differentiable approximations that preserve the underlying operator structure.
@@ -199,7 +199,7 @@ In contrast, the Banach space $W^{1,\infty}$:
 
 Thus, embedding observables into $W^{1,\infty}$ is not merely convenient—it is mathematically necessary for stability and uniform approximation.
 
-We embed each observable into the Banach space $W^{1,\infty}$.
+We embed each observable into the Banach space $W^{1,\infty}$ [12, 13].
 
 ### Why Banach Spaces?
 
@@ -220,6 +220,8 @@ We embed each observable into the Banach space $W^{1,\infty}$.
 $$
 f_{E,t,\varepsilon} = f_{E,t} * \rho_\varepsilon.
 $$
+
+The mollifier $\rho_\varepsilon$ is a standard approximate identity [12, 14].
 
 ### Theorem 1 (Uniform Approximation)
 
@@ -273,8 +275,8 @@ $
 p_t \in \mathbb{R}^{64}.
 $
 
-This reflects the inherently high-dimensional nature of real patient states  
-(Dimensions ranging from 32 to 256 are established as typical latent spaces in prior research.)。
+This reflects the inherently high-dimensional nature of real patient states
+(Dimensions ranging from 32 to 256 are established as typical latent spaces in prior research [5, 6].)。
 
 ### **5.1.2 Time Evolution Dynamics**
 
@@ -346,7 +348,7 @@ These predicted behaviors guide the design and interpretation of the subsequent 
 
 ## **5.2 Clinical Interpretation**
 
-Real patient states are inherently high-dimensional, consisting of laboratory values, physiological signals, imaging-derived features, medication histories, and clinical notes. Recent clinical machine learning studies routinely employ latent spaces of **32 to 256 dimensions**, while Foundation Models typically operate in hundreds of dimensions.
+Real patient states are inherently high-dimensional, consisting of laboratory values, physiological signals, imaging-derived features, medication histories, and clinical notes. Recent clinical machine learning studies routinely employ latent spaces of **32 to 256 dimensions** [5, 6], while Foundation Models typically operate in hundreds of dimensions.
 
 Clinical interventions are fundamentally **order-dependent** and interact with ongoing physiological time evolution, mirroring the non-commutative operator structure modeled here. Clinical outcome functions are often noisy and non-differentiable, making mollifier-based smoothing a natural mechanism for enabling gradient-based optimization.
 
@@ -356,7 +358,7 @@ Thus、the high-dimensional synthetic environment used in our experiments serves
 
 We evaluate the framework across five experiments and one supplementary experiment,
 each targeting a specific theoretical claim.
-Common settings: $d = 64$, $T = 20$, $n_\text{init} = 20$, Adam lr $= 0.01$,
+Common settings: $d = 64$, $T = 20$, $n_\text{init} = 20$, Adam [7] lr $= 0.01$,
 500 steps per run, convergence criterion $\|\theta - \theta^*\| < 0.05$.
 
 ### **5.3.1 Gradient Regularity under Symmetrized Smoothing (Exp1-modify)**
@@ -430,27 +432,27 @@ Our framework intersects several major research areas, yet differs fundamentally
 
 ### Neural ODEs
 
-Neural ODEs embed discrete data into continuous-time differential equations.  
+Neural ODEs embed discrete data into continuous-time differential equations [4].
 **Difference:** Neural ODEs assume *commutative* flows, whereas we model **non-commutative intervention operators**.
 
 ### Control Theory
 
-Classical control assumes smooth, differentiable dynamics.  
+Classical control assumes smooth, differentiable dynamics [3].
 **Difference:** we handle **discrete, irreversible, and non-commutative interventions**.
 
 ### Reinforcement Learning
 
-RL optimizes sequential decisions via non-differentiable methods.  
+RL optimizes sequential decisions via non-differentiable methods [1, 2].
 **Difference:** we construct **differentiable approximations** of intervention-induced observables.
 
 ### Kernel Methods
 
-Kernel regression smooths discrete data.  
+Kernel regression smooths discrete data [9].
 **Difference:** kernel methods do not model **operator composition** or **time-indexed interventions**.
 
 ### Operator Learning
 
-DeepONet/FNO approximate operators between function spaces.  
+DeepONet [10] and FNO [11] approximate operators between function spaces.
 **Difference:** existing methods assume **commutative or linear operators**, while we model **non-commutative operator algebras**.
 
 ### Structural Comparison with Existing Paradigms
@@ -463,7 +465,7 @@ The following table summarizes the structural differences:
 | Neural ODEs | Inputs to vector field | Continuous | Largely commutative | Yes |
 | Reinforcement Learning | Discrete actions | Arbitrary | Non‑commutative | No (typically) |
 | Classical Control | Inputs to smooth dynamics | Continuous | Often assumes commutativity | Yes |
-| Operator Learning (FNO/DeepONet) | Linear/commutative operators | Arbitrary | Often commutative | Yes |
+| Operator Learning (FNO [11]/DeepONet [10]) | Linear/commutative operators | Arbitrary | Often commutative | Yes |
 | **This Work** | **Operators acting on state** | **Arbitrary** | **Non‑commutative** | **Enabled via smoothing** |
 
 This comparison highlights that our framework uniquely combines:
@@ -540,9 +542,9 @@ on system structure.
 
 ## **7.5 Second-Order Methods and the Scope of the Smoothing Benefit**
 
-A supplementary experiment (Appendix B.1) compares Adam and L-BFGS on both
+A supplementary experiment (Appendix B.1) compares Adam [7] and L-BFGS [8] on both
 raw and smooth conditions.
-L-BFGS converges in $\leq 1$ step for all 20 initializations under both $J$ and
+L-BFGS [8] converges in $\leq 1$ step for all 20 initializations under both $J$ and
 $J_{\varepsilon,\text{sym}}$, approximately $307\times$ faster than Adam’s median of
 307 steps. The raw and smooth L-BFGS conditions are indistinguishable
 ($\|\theta - \theta^*\| \approx 0.001$).
@@ -595,7 +597,7 @@ continuous-time flows, our framework explicitly models discrete non-commutative
 operator sequences and applies smoothing *after* forming the observable.
 Compared to curriculum annealing methods, our $\varepsilon \to 0$ schedule is
 grounded in the convergence guarantee of Corollary 2 rather than empirical heuristics.
-Compared to operator learning (DeepONet/FNO), we do not learn operators from data
+Compared to operator learning (DeepONet [10] / FNO [11]), we do not learn operators from data
 but analytically characterize the smoothing-induced landscape geometry
 with provable approximation bounds.
 
@@ -618,7 +620,7 @@ operator compositions;
 gradient is Lipschitz continuous (Fréchet differentiability, Layer 3);
 (iv) existence of minimizers for $J_\varepsilon$ and their convergence to
 minimizers of $J$ as $\varepsilon \to 0$ (Theorem 2, Corollary 2).
-All proofs compile with zero \texttt{sorry} under Lean 4 v4.28.0 / Mathlib v4.28.0
+All proofs compile with zero \texttt{sorry} under Lean 4 v4.28.0 [15] / Mathlib v4.28.0 [16]
 and are available at \url{https://github.com/kazuma0606/don_theory}.
 
 **Empirical findings.**
@@ -658,7 +660,37 @@ and PDE-based analysis of intervention landscapes.
 
 # **References**
 
-*(To be added)*
+[1] V. Mnih, K. Kavukcuoglu, D. Silver, A. A. Rusu, J. Veness, M. G. Bellemare, A. Graves, M. Riedmiller, A. K. Fidjeland, G. Ostrowski, S. Petersen, C. Beattie, A. Sadik, I. Antonoglou, H. King, D. Kumaran, D. Wierstra, S. Legg, and D. Hassabis. Human-level control through deep reinforcement learning. *Nature*, 518:529–533, 2015.
+
+[2] R. S. Sutton and A. G. Barto. *Reinforcement Learning: An Introduction*. 2nd ed. MIT Press, Cambridge, MA, 2018.
+
+[3] L. S. Pontryagin, V. G. Boltyanskii, R. V. Gamkrelidze, and E. F. Mishchenko. *The Mathematical Theory of Optimal Processes*. Translated by K. N. Trirogoff. Interscience, New York, 1962.
+
+[4] R. T. Q. Chen, Y. Rubanova, J. Bettencourt, and D. Duvenaud. Neural ordinary differential equations. In *Advances in Neural Information Processing Systems (NeurIPS)*, volume 31, 2018.
+
+[5] A. Rajkomar, E. Oren, K. Chen, A. M. Dai, N. Hajaj, M. Hardt, P. J. Liu, X. Liu, J. Marcus, M. Sun, P. Sundberg, H. Yee, K. Zhang, Y. Zhang, G. Flores, G. E. Duggan, J. Irvine, Q. Le, K. Litsch, A. Mossin, J. Tansuwan, D. Wang, J. Wexler, J. Wilson, D. Ludwig, S. L. Volchenboum, K. Chou, M. Pearson, S. Madabushi, N. H. Shah, A. J. Butte, M. D. Howell, C. Cui, G. S. Corrado, and J. Dean. Scalable and accurate deep learning with electronic health records. *npj Digital Medicine*, 1:18, 2018.
+
+[6] R. Miotto, F. Wang, S. Wang, X. Jiang, and J. T. Dudley. Deep learning for healthcare: review, opportunities and challenges. *Briefings in Bioinformatics*, 19(6):1236–1246, 2018.
+
+[7] D. P. Kingma and J. Ba. Adam: A method for stochastic optimization. In *International Conference on Learning Representations (ICLR)*, 2015. arXiv:1412.6980.
+
+[8] D. C. Liu and J. Nocedal. On the limited memory BFGS method for large scale optimization. *Mathematical Programming*, 45(1):503–528, 1989.
+
+[9] B. Schölkopf and A. J. Smola. *Learning with Kernels: Support Vector Machines, Regularization, Optimization, and Beyond*. MIT Press, Cambridge, MA, 2002.
+
+[10] L. Lu, P. Jin, G. Pang, Z. Zhang, and G. E. Karniadakis. Learning nonlinear operators via DeepONet based on the universal approximation theorem of operators. *Nature Machine Intelligence*, 3:218–229, 2021.
+
+[11] Z. Li, N. Kovachki, K. Azizzadenesheli, B. Liu, K. Bhattacharya, A. Stuart, and A. Anandkumar. Fourier neural operator for parametric partial differential equations. In *International Conference on Learning Representations (ICLR)*, 2021. arXiv:2010.08895.
+
+[12] L. C. Evans. *Partial Differential Equations*. 2nd ed. Graduate Studies in Mathematics, vol. 19. American Mathematical Society, Providence, RI, 2010.
+
+[13] R. A. Adams and J. J. F. Fournier. *Sobolev Spaces*. 2nd ed. Pure and Applied Mathematics, vol. 140. Academic Press, Amsterdam, 2003.
+
+[14] H. Brezis. *Functional Analysis, Sobolev Spaces and Partial Differential Equations*. Universitext. Springer, New York, 2011.
+
+[15] L. de Moura and S. Ullrich. The Lean 4 theorem prover and programming language. In *Automated Deduction – CADE 28*, Lecture Notes in Computer Science, vol. 12699, pp. 625–635. Springer, Cham, 2021.
+
+[16] The mathlib Community. The Lean mathematical library. In *Proceedings of the 9th ACM SIGPLAN International Conference on Certified Programs and Proofs (CPP 2020)*, pp. 367–381. ACM, New York, 2020. arXiv:1910.09336.
 
 ---
 
@@ -737,9 +769,9 @@ is bounded and Lipschitz on $P$. In particular, $f_{E,t} \in W^{1,\infty}(P)$.
    Since $P$ is bounded and each operator maps bounded sets to bounded sets (by the regularity assumptions in the main text), the image $F(P)$ is bounded in $\mathbb{R}^d$.  
    As $O_t$ is continuous and Lipschitz, it maps bounded sets to bounded sets, hence $f_{E,t}(P)$ is bounded in $\mathbb{R}^n$.
 
-3. **Membership in $W^{1,\infty}$.**  
-   A Lipschitz function on a bounded domain in $\mathbb{R}^d$ belongs to $W^{1,\infty}$:  
-   by Rademacher's theorem, a Lipschitz function is differentiable almost everywhere, and its weak derivative is essentially bounded with
+3. **Membership in $W^{1,\infty}$.**
+   A Lipschitz function on a bounded domain in $\mathbb{R}^d$ belongs to $W^{1,\infty}$:
+   by Rademacher's theorem [12], a Lipschitz function is differentiable almost everywhere, and its weak derivative is essentially bounded with
    $$
    \|\nabla f_{E,t}\|_{L^\infty(P)} \le \text{Lip}(f_{E,t}).
    $$
@@ -923,7 +955,7 @@ This shows both existence of minimizers for $J_\varepsilon$ and uniform approxim
 ## A.5 Lean 4 Proof Summary
 
 All core theoretical claims in this paper have been formally verified
-using Lean 4 with Mathlib. The complete proof development is publicly available at:
+using Lean 4 [15] with Mathlib [16]. The complete proof development is publicly available at:
 
 > **https://github.com/kazuma0606/don_theory**
 > Directory: `verify/lean4/MedicusVerify/`
