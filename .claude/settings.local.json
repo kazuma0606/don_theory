@@ -9,7 +9,10 @@
       "Read(//mnt/c/Users/yoshi/don_theory/**)",
       "Bash(uv sync:*)",
       "Bash(nvcc --version 2>&1 | head -3; nvidia-smi --query-gpu=name,driver_version,compute_cap --format=csv,noheader 2>&1 | head -3)",
-      "Bash(uv run:*)"
+      "Bash(uv run:*)",
+      "Bash(find /c/Users/yoshi/don_theory/visualization/img -name \"*.png\" 2>/dev/null | sort; find /c/Users/yoshi/don_theory/img -name \"*.png\" 2>/dev/null | sort)",
+      "WebSearch",
+      "WebFetch(domain:arxiv.org)"
     ]
   }
 }

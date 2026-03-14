@@ -89,7 +89,8 @@
 ### B6. Appendix A（Lean4 コード）の追加
 
 - [ ] B6.1 Appendix A（Layer 1–3 のコア部分）を論文末尾に追加
-- [ ] B6.2 `verify/lean4/` を公開 GitHub リポジトリに push
+- [x] B6.2 `verify/lean4/` を公開 GitHub リポジトリに push
+  - URL: https://github.com/kazuma0606/don_theory.git
 - [ ] B6.3 `lean-toolchain` バージョンを論文に記載・`lake-manifest.json` を commit
 
 ---
