@@ -21,6 +21,7 @@ report/          論文原稿・付録素材
 experience/      実験仕様（exp02.md）・実装タスク（tasks.md）
 verify/lean4/    Lean 4 形式証明（Layer 1–3 は sorry ゼロ完了）
 visualization/   可視化スクリプト（Python）
+lab/wild/W07/    探索的実験シリーズ（W-7）
 master_schedule.md  投稿スケジュール・論文間依存関係
 CLAUDE.md        Claude Code 向けガイド
 ```
@@ -63,3 +64,15 @@ CUDA 前提。仕様書 → `experience/exp02.md`
 cd visualization
 uv run python run_all.py   # img/ に PNG を出力
 ```
+
+## 探索的実験：W-7 シリーズ（lab/wild/W07/）
+
+介入順序のスクリーニングにおける位相不変量の予測力を系統的に検証した実験シリーズ。
+
+**主な発見：**
+- Burau trace（t=1/2）は dist と r≈−0.53 の相関を持ち，3-Stage-25% フィルタ（P@50=0.868）で実用的スクリーニングが可能
+- 標準表現行列（SRM）25次元特徴量 + Ridge 回帰で CV R²=0.934，P@20=0.900 を達成
+- R²≈0.27 の天井は Burau の非忠実性ではなく**スカラー圧縮**が原因（LKB 忠実表現もスカラー圧縮で R²=0.206 と低下）
+- 応用可能性：マイクロサービス開発の実装順序最適化，AI 自動コーディングエージェントの順序計画
+
+詳細 → `lab/wild/W07/results/`（methods / results / discussion）、将来展望 → `lab/wild/W07/future.md`

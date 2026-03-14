@@ -107,6 +107,53 @@ jp_val = float(jp.subs(t=RR(0.25)))
 
 最初の呼び出しは Hecke 代数初期化のため warm-up 計算が必要。
 
+### 2.7 Burau 多点評価（W-7-2 Phase 1）
+
+Burau trace を複数の評価点 t ∈ {1/4, 1/3, 1/2, 2/3, 3/4} で評価し，5 次元特徴ベクトルを構成：
+
+```sage
+t_vals = [QQ(1)/QQ(4), QQ(1)/QQ(3), QQ(1)/QQ(2), QQ(2)/QQ(3), QQ(3)/QQ(4)]
+feats = [float(b.burau_matrix()(t=tv).trace()) for tv in t_vals]
+```
+
+| 特徴セット | 説明 | 次元 |
+|---|---|---|
+| A | Burau trace (t=1/2 のみ，ベースライン) | 1 |
+| B | Burau traces at 5 points | 5 |
+| C | B + Cayley 距離 | 6 |
+| D | B + cycle type ダミー (11D) | 16 |
+| E | Lasso 選択後（生存: t=1/4, t=3/4）| 2 |
+
+多重共線性診断に VIF（statsmodels.stats.outliers_influence.variance_inflation_factor）を使用。
+評価点間の相関が 0.88–0.997 と極めて高く，VIF = ∞ となる（完全共線性）。
+
+### 2.8 LKB 忠実表現（W-7-2 Phase 3）
+
+Lawrence-Krammer-Bigelow (LKB) 表現は K≥5 でも忠実（Burau は K≥5 で非忠実）。
+K=6 では 15×15 行列（次元 K(K-1)/2 = 15）として定義される。
+
+```sage
+BK = BraidGroup(K)
+b = BK(word)
+m_sym = b.LKB_matrix()          # symbolic matrix over Z[x, y]
+x_var, y_var = m_sym.base_ring().gens()
+m_num = m_sym.subs({x_var: xv, y_var: yv})  # evaluate at (xv, yv)
+lkb_trace = float(m_num.trace())
+lkb_eigs  = [abs(complex(e)) for e in m_num.eigenvalues()]
+```
+
+評価点: (x,y) ∈ {(1/2,1/2), (1/3,1/2), (2/3,1/2), (1/2,1/3), (1/2,2/3)}
+
+| 特徴セット | 説明 | 次元 |
+|---|---|---|
+| G | LKB trace (1 評価点) | 1 |
+| H | LKB trace (5 評価点) | 5 |
+| I | LKB 固有値絶対値 (1 評価点) | 15 |
+| J | LKB スカラー群 (trace/det/max_eig/frob) × 2 点 | 8 |
+| K | Burau (1pt) + LKB trace (5pt) | 6 |
+| L | LKB (H: 5pt) + SRM (25D) | 30 |
+| M | Burau (1pt) + LKB (H: 5pt) + SRM (25D) | 31 |
+
 ### 2.6 Cayley グラフ Laplacian 固有ベクトル（W-7n）
 
 S₆（720頂点）上の Cayley グラフ（全 C(6,2)=15 個の隣接転置で生成）を構築し，
@@ -167,6 +214,48 @@ Stage 2: 型内 direction-aware Burau ランキングで上位を選択
 - **D1: コセット分解**：S₆/S₄ コセット代表元インデックスを特徴量に
 - **E: SRM 線形回帰（S_K Fourier）**：標準表現行列の (K-1)² 要素を特徴量として線形回帰
 
+### 3.8 W-7-2 多変量回帰プロトコル
+
+各特徴セット（A–M）に対して以下を順次適用：
+
+**① VIF 診断**
+```python
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+vif = [variance_inflation_factor(X, i) for i in range(X.shape[1])]
+```
+VIF > 10 で多重共線性あり，∞ で完全共線性。
+
+**② OLS（statsmodels）**
+```python
+import statsmodels.api as sm
+res = sm.OLS(y, sm.add_constant(X)).fit()
+# 出力: Adj.R², F-stat, 各変数の係数/t値/p値
+```
+
+**③ LassoCV（特徴選択）**
+```python
+from sklearn.linear_model import LassoCV
+lasso = LassoCV(cv=5, random_state=42, max_iter=5000).fit(X_scaled, y)
+# 係数 0 の変数を除去し，生存特徴量を確認
+```
+
+**④ RidgeCV（正則化回帰）**
+```python
+from sklearn.linear_model import RidgeCV
+ridge = RidgeCV(alphas=[0.01, 0.1, 1, 10, 100], cv=5).fit(X_scaled, y)
+cv_r2 = cross_val_score(ridge, X_scaled, y, cv=kf, scoring='r2').mean()
+```
+
+**⑤ 固有値特徴量の PCA 直交化（Phase 2）**
+```python
+from sklearn.decomposition import PCA
+pca = PCA(n_components=n_components).fit_transform(X_eigen)
+# 分散寄与率・PC1 と dist の相関を確認
+```
+
+**⑥ Precision@N 評価**
+5-fold CV 各 fold のテストデータで Ridge 予測スコアを使いランキングし，P@20 / P@50 を計算。
+
 ### 3.7 スペクトル手法（W-7n）
 
 - **Graph Fourier (GF_Mxx)**：Cayley Laplacian の最初の M 固有ベクトルで Ridge 回帰（α=1.0）
@@ -217,3 +306,6 @@ K=6 の 720 件を 5 分割交差検証（`KFold(n_splits=5, shuffle=True, rando
 | exp_W7l.sage | 解析的拡張 A–E |
 | exp_W7m.sage | 新方向性 4 種（OPW/Jacobian/Coset/SRM-Fourier） |
 | exp_W7n.sage | **Cayley グラフスペクトル + Wavelet** 全手法 |
+| exp_W7-2a.sage | W-7-2 Phase 1: Burau 多点評価 + OLS/LassoCV/RidgeCV/VIF |
+| exp_W7-2b.sage | W-7-2 Phase 2: Burau 固有値スペクトル + PCA 直交化 |
+| exp_W7-2c.sage | W-7-2 Phase 3: LKB 忠実表現 全特徴セット G–M |

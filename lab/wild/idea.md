@@ -248,6 +248,126 @@ Braid group の性質：
 
 ---
 
+## W-7-2. 多変量トポロジー不変量による dist 予測の天井探索
+
+### 背景
+
+W-7 シリーズで Burau trace（スカラー 1 個）の相関が r ≈ −0.53，
+SRM 線形回帰（25 次元）を使っても CV R² ≈ 0.27 の天井が破れなかった。
+この天井が「Burau の情報不足」によるものか，
+「代数的不変量では原理的に予測できない dist の変動が 73% ある」のかを判別したい。
+
+### アイデア
+
+Burau 表現は B_K → GL(K, ℤ[t, t⁻¹]) の準同型だが，K≥5 で非忠実（核が非自明）。
+つまり同じ Burau 行列を持つ異なる組み紐が存在する。
+この情報損失の階層：
+
+```
+組み紐 b ∈ B_K
+  ↓ Burau 行列（K×K，ℤ[t,t⁻¹]）← 非忠実（K≥5）
+  ↓ t=1/2 で評価（実数行列）
+  ↓ trace（スカラー）← W-7 はここだけ
+```
+
+これを段階的に「解凍」していくことで，どの層が dist に効いているかを特定できる。
+
+### 特徴量の候補
+
+| 特徴量 | 次元 | 意味 |
+|---|---|---|
+| `burau(1/2)` | 1 | W-7 の基準スカラー |
+| `burau(t)` at t∈{1/3, 1/4, 2/3, 3/4} | 4 | 同じ表現の別の切り口 |
+| `eigenvalues of Burau(1/2)` | K−1 | trace より豊富なスペクトル情報 |
+| writhe | 1 | 交差符号の和（組み紐語に依存） |
+| word length（既約語の長さ） | 1 | Cayley 距離の組み紐版 |
+| SRM entries | (K−1)² | S_K 標準表現（W-7m で有効） |
+| LKB trace / 固有値 | K(K−1)/2 | **忠実表現**（B_K を完全識別） |
+
+### 実験設計
+
+**Phase 1（低コスト）**：Burau(t) を複数点で評価した特徴ベクトルで R² が上がるか検証
+```python
+t_vals = [1/4, 1/3, 1/2, 2/3, 3/4]
+features = [float(b.burau_matrix()(t=QQ(p)/QQ(q)).trace()) for p,q in ...]
+```
+→ R² が 0.27 から有意に上昇すれば「Burau の単一評価点が情報ボトルネック」
+→ 上昇しなければ Phase 2 へ
+
+**Phase 2（中コスト）**：Burau の固有値スペクトル（K−1 個）を追加
+→ trace と eigenvalues は非線形な関係。Burau(1/2) が同じでも固有値分布が異なるケースを識別
+
+**Phase 3（高コスト）**：LKB 表現（忠実）の trace または固有値を追加
+→ LKB は SageMath で `b.burau_matrix()` の拡張として計算可能か要確認
+→ 忠実なので「同じ LKB 値 → 同じ dist」が成り立てば，残差は pure dynamical noise
+
+### 交差検証設定
+
+W-7j 以降と同一プロトコルで比較可能にする：
+
+```python
+from sklearn.model_selection import KFold, cross_val_score
+kf = KFold(n_splits=5, shuffle=True, random_state=int(42))
+```
+
+- **K=6，720 件，5-fold CV**（各 fold: train=576, test=144）
+- 評価指標：CV R²（回帰精度）と Precision@N（N=10,20,50 のスクリーニング性能）
+- 各 Phase で同じ fold 分割を使い，Phase 間の性能差を直接比較
+
+### 解析モデル
+
+#### A. Lasso / Ridge（特徴量選択 + 正則化回帰）
+
+```python
+from sklearn.linear_model import LassoCV, RidgeCV
+# alpha を CV で自動選択
+lasso = LassoCV(cv=5, random_state=int(42))
+ridge = RidgeCV(alphas=[0.01, 0.1, 1, 10, 100], cv=5)
+```
+
+- `lasso_path` で各特徴量の寄与の大きさと安定性を可視化（どの不変量が有効かを判断）
+- Lasso の零化された係数 = 「dist に効かない不変量」の特定
+
+#### B. 重回帰分析（OLS + 有意性検定）
+
+```python
+import statsmodels.api as sm
+X_with_const = sm.add_constant(X_features)
+model = sm.OLS(y_dist, X_with_const).fit()
+print(model.summary())  # t値・p値・VIF・調整済み R²
+```
+
+- **各不変量の回帰係数・t 値・p 値**を出力し，統計的有意性を確認
+- **VIF（分散拡大因子）**で多重共線性を診断（Burau 複数評価点は高相関になりやすい）
+- 調整済み R²（Adjusted R²）で特徴量追加の実質的な寄与を評価
+- CV との照合：OLS の p 値が有意でも CV R² が上がらなければ過学習のシグナル
+
+```python
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+vif = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
+```
+
+### 検証指標
+
+- CV R² の天井がどの Phase で変化するか（または変化しないか）
+- OLS の調整済み R² と CV R² の乖離（過学習の検出）
+- 各特徴量の Lasso 係数の安定性（fold 間の標準偏差）
+- Precision@50 が 3-Stage-25%（0.868）を超えるか
+
+### 理論的含意
+
+- **天井が破れる場合**：dist は B_K の忠実表現で完全に予測可能 → 組み紐の位相が実験ランドスケープを決定する
+- **天井が破れない場合**：残差 73% は演算子の dynamical 情報（Jacobian 等）に依存しており，代数不変量だけでは原理的に届かない → 「Burau が捉える部分と dynamical 部分の直交分解」という新しい問いが立つ
+- **VIF が高い場合**：Burau 複数評価点は線形従属に近く，主成分分析（PCA）で直交化してから回帰する方が安定
+
+### ファイル予定
+
+`W07/script/exp_W7-2a.sage` — Phase 1: Burau 複数評価点 + LassoCV + OLS
+`W07/script/exp_W7-2b.sage` — Phase 2: 固有値スペクトル追加 + VIF 診断
+`W07/script/exp_W7-2c.sage` — Phase 3: LKB + 統合多変量モデル（5-fold CV + 重回帰）
+
+---
+
 ## 優先順位と現実性
 
 | 実験 | 現実性 | 面白さ | 優先度 |
@@ -259,6 +379,7 @@ Braid group の性質：
 | W-5（d'Alembertian） | ★★ 中 | ★★ | 数値微分で取っつきやすい |
 | W-6（持続ホモロジー） | ★★ 中 | ★★★ | giotto-tda 要インストール |
 | W-7（Braid group） | ★ 低 | ★★★★ | 最もぶっ飛んでいる |
+| W-7-2（多変量不変量・天井探索） | ★★★ 高 | ★★★★ | W-7 の直接の続き。Burau 多点→固有値→LKB の段階的拡張で R² 天井の原因を特定 |
 
 ---
 
