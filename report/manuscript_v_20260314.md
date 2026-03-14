@@ -2,40 +2,44 @@
 
 # **Differentiable Optimization of Non‑Commutative Intervention Sequences via Banach‑Space Smoothing**
 
+**Hisanori Yoshimura**
+
 ---
 
 ## **Abstract**
 
-Time‑dependent intervention systems—such as clinical treatments, robotic manipulation, and sequential decision processes—exhibit strong order‑dependence due to the non‑commutative interaction between interventions and underlying dynamics.  
-However, optimizing such systems is challenging because intervention sequences induce discrete, non‑smooth, and non‑differentiable objective functions.
+Time‑dependent intervention systems—such as clinical treatments, robotic manipulation, and sequential decision processes—exhibit strong order‑dependence due to the non‑commutative interaction between interventions and underlying dynamics.
+However, optimizing such systems is challenging because intervention sequences induce discrete, non‑smooth, and non‑differentiable objective functions, rendering standard gradient‑based methods inapplicable.
 
-We propose a functional‑analytic framework that models interventions, time evolution, and observations as operators acting on high‑dimensional belief states.  
-By embedding intervention‑induced observables into $W^{1,\infty}$ and applying mollifier‑based smoothing, we obtain uniformly convergent differentiable approximations that enable gradient‑based optimization of intervention parameters.  
-We demonstrate the framework in high‑dimensional synthetic environments designed to reflect the structure of real clinical systems, showing that smoothing stabilizes gradients and significantly improves optimization performance.
+We propose a functional‑analytic framework that models interventions, time evolution, and observations as operators acting on high‑dimensional belief states.
+By embedding intervention‑induced observables into $W^{1,\infty}$ and applying mollifier‑based smoothing, we obtain uniformly convergent differentiable approximations that enable gradient‑based optimization of intervention parameters.
+We evaluate the framework in high‑dimensional synthetic environments designed to reflect the structure of real clinical systems, and find that smoothing stabilizes gradients and leads to more reliable optimization performance.
 
 ---
 
 # **1 Introduction**
 
-Interventions applied to time‑evolving systems are inherently order‑dependent.  
-In clinical medicine, chemotherapy followed by surgery produces different outcomes than the reverse order.  
-In robotics, grasping before lifting is not equivalent to lifting before grasping.  
+Interventions applied to time‑evolving systems are inherently order‑dependent.
+In clinical medicine, chemotherapy followed by surgery produces different outcomes than the reverse order [17, 18].
+In robotics, grasping before lifting is not equivalent to lifting before grasping [42].
 These examples illustrate a universal structural property:
 
 > **Interventions and time evolution interact in a fundamentally non‑commutative manner.**
 
-Despite the ubiquity of such systems, optimizing intervention parameters remains difficult.
-Most machine‑learning methods rely on differentiable objectives, yet intervention sequences induce discrete, non‑smooth, and non‑commutative operator compositions.
+Despite the ubiquity of such systems, the optimization of intervention parameters remains an open challenge.
+Most machine‑learning methods rely on differentiable objectives; however, intervention sequences induce discrete, non‑smooth, and non‑commutative operator compositions that preclude direct gradient computation.
 Reinforcement learning handles such systems but lacks differentiability [1, 2]; control theory assumes smooth dynamics [3]; neural ODEs assume commutative flows [4].
+In the clinical domain, the framework of *dynamic treatment regimes* (DTRs) [17, 18, 19] formalizes sequential, individualized treatment decisions, yet classical DTR estimation does not exploit the operator structure or differentiable objectives developed here.
+From a causal perspective [40, 41, 44], each intervention constitutes a *do*-operation that modifies the system state; the resulting order-dependence is precisely the non-commutativity studied in this work.
 
-We introduce a functional‑analytic framework that models interventions, time evolution, and observations as operators acting on high‑dimensional belief states.  
+We introduce a functional‑analytic framework that models interventions, time evolution, and observations as operators acting on high‑dimensional belief states.
 By embedding intervention‑induced observables into $W^{1,\infty}$ and applying mollifier smoothing, we obtain differentiable approximations that preserve the underlying operator structure.
 
 **Our contributions are:**
 
-- **A non‑commutative operator model** for time‑dependent interventions.  
-- **A Banach‑space embedding** enabling uniform control of observables.  
-- **A mollifier‑based smoothing method** yielding differentiable approximations with provable error bounds.  
+- **A non‑commutative operator model** for time‑dependent interventions.
+- **A Banach‑space embedding** enabling uniform control of observables.
+- **A mollifier‑based smoothing method** yielding differentiable approximations with provable error bounds.
 - **A demonstration in high‑dimensional synthetic environments** reflecting real clinical systems.
 
 ---
@@ -44,13 +48,15 @@ By embedding intervention‑induced observables into $W^{1,\infty}$ and applying
 
 ## **2.1 State Space**
 
-Let $P \subset \mathbb{R}^d$ be a high-dimensional belief-state space.  
+Let $P \subset \mathbb{R}^d$ be a high-dimensional belief-state space.
 In clinical applications, $P$ may represent:
 
-- physiological measurements,  
-- imaging-derived features,  
-- medication histories,  
+- physiological measurements,
+- imaging-derived features,
+- medication histories,
 - latent embeddings of multimodal clinical data.
+
+The choice of $d = 64$ as our default dimensionality is motivated by the established scale of biological and clinical representation spaces. Protein structure models such as AlphaFold [37] operate in hundreds of dimensions, and foundation models for clinical data [39] typically use representation spaces in this range. Clinical machine learning studies routinely employ latent spaces of 32–256 dimensions [38], confirming that $d = 64$ is a realistic and representative operating point.
 
 ## **2.2 Intervention Operators**
 
@@ -133,6 +139,8 @@ U_t : P \to P,
 U_{t+s} = U_t \circ U_s.
 $$
 
+The semigroup property $U_{t+s} = U_t \circ U_s$ situates time evolution within the classical theory of strongly continuous (C₀) semigroups on Banach spaces [32, 33]. The generator of $\{U_t\}$ characterizes the infinitesimal rate of change of the state, and the semigroup formalism provides a rigorous foundation for the stability analysis invoked in Assumption 4.
+
 ## **2.6 Time-Indexed Interventions**
 
 $$
@@ -147,7 +155,7 @@ $$
 
 ### **2.7.1 Why Non‑Commutativity Breaks Optimization**
 
-Non‑commutativity does not merely express that intervention order matters; it fundamentally alters the geometry of the induced objective landscape.  
+Non‑commutativity does not merely express that intervention order matters; it is argued here that it fundamentally alters the geometry of the induced objective landscape.  
 When the composition  
 $$
 U_{\Delta t} \circ E_t \neq E_{t+\Delta t} \circ U_{\Delta t}
@@ -197,9 +205,9 @@ In contrast, the Banach space $W^{1,\infty}$:
 - ensures that mollifier smoothing converges **uniformly**,  
 - provides the correct functional setting for non‑commutative operator sequences.
 
-Thus, embedding observables into $W^{1,\infty}$ is not merely convenient—it is mathematically necessary for stability and uniform approximation.
+It is therefore argued that embedding observables into $W^{1,\infty}$ is not merely convenient—it is mathematically necessary for stability and uniform approximation in the present setting.
 
-We embed each observable into the Banach space $W^{1,\infty}$ [12, 13].
+We embed each observable into the Banach space $W^{1,\infty}$ [12, 13]. The distribution-theoretic framework underpinning the definition of $W^{1,\infty}$ and the construction of mollifiers as approximate identities in the sense of distributions is treated comprehensively in Hörmander [36].
 
 ### Why Banach Spaces?
 
@@ -221,7 +229,7 @@ $$
 f_{E,t,\varepsilon} = f_{E,t} * \rho_\varepsilon.
 $$
 
-The mollifier $\rho_\varepsilon$ is a standard approximate identity [12, 14].
+The mollifier $\rho_\varepsilon$ is a standard approximate identity [12, 14]. The use of smoothing as a technique for making non-smooth objectives tractable to gradient-based optimization is well established in convex optimization [29, 31]; our application extends this principle to the non-convex, operator-theoretic setting.
 
 ### Theorem 1 (Uniform Approximation)
 
@@ -348,11 +356,11 @@ These predicted behaviors guide the design and interpretation of the subsequent 
 
 ## **5.2 Clinical Interpretation**
 
-Real patient states are inherently high-dimensional, consisting of laboratory values, physiological signals, imaging-derived features, medication histories, and clinical notes. Recent clinical machine learning studies routinely employ latent spaces of **32 to 256 dimensions** [5, 6], while Foundation Models typically operate in hundreds of dimensions.
+Real patient states are inherently high-dimensional, consisting of laboratory values, physiological signals, imaging-derived features, medication histories, and clinical notes. Recent clinical machine learning studies routinely employ latent spaces of **32 to 256 dimensions** [5, 6, 38], while foundation models typically operate in hundreds of dimensions [39]. Biological representations such as those produced by AlphaFold [37] further indicate that high-dimensional embeddings are scientifically well-motivated.
 
 Clinical interventions are fundamentally **order-dependent** and interact with ongoing physiological time evolution, mirroring the non-commutative operator structure modeled here. Clinical outcome functions are often noisy and non-differentiable, making mollifier-based smoothing a natural mechanism for enabling gradient-based optimization.
 
-Thus、the high-dimensional synthetic environment used in our experiments serves as a structural analogue of real clinical systems, allowing us to isolate and evaluate the mathematical properties of the proposed framework.
+Thus, the high-dimensional synthetic environment employed in our experiments serves as a structural analogue of real clinical systems, allowing us to isolate and evaluate the mathematical properties of the proposed framework.
 
 ## **5.3 Experimental Results**
 
@@ -360,6 +368,7 @@ We evaluate the framework across five experiments and one supplementary experime
 each targeting a specific theoretical claim.
 Common settings: $d = 64$, $T = 20$, $n_\text{init} = 20$, Adam [7] lr $= 0.01$,
 500 steps per run, convergence criterion $\|\theta - \theta^*\| < 0.05$.
+The choice of first-order optimization (Adam) as the primary optimizer reflects that the primary benefit of $W^{1,\infty}$ embedding is gradient regularity for methods without curvature information [30]. Second-order methods such as L-BFGS [8] are compared in Appendix B.1.
 
 ### **5.3.1 Gradient Regularity under Symmetrized Smoothing (Exp1-modify)**
 
@@ -372,11 +381,11 @@ Both the raw objective $J$ and $J_{\varepsilon,\text{sym}}$ achieve a convergenc
 trajectories (step difference $\leq 2$ across all 20 initializations).
 The same 4 initializations fail to converge under both conditions.
 
-The decisive difference is the step-to-step gradient norm variation
+The primary distinction is observed in the step-to-step gradient norm variation
 $|\Delta\|\nabla J\||$: this quantity is consistently smaller under $J_{\varepsilon,\text{sym}}$
 than under $J$ across all optimization steps (Fig. 09).
-This is direct numerical evidence for the Lipschitz-continuous gradient established
-in the Lean 4 proof of Layer 3 (Fréchet differentiability of the mollified observable).
+This finding provides numerical evidence consistent with the Lipschitz-continuous gradient
+established in the Lean 4 proof of Layer 3 (Fréchet differentiability of the mollified observable).
 
 ### **5.3.2 Loss Landscape Visualization (Exp4)**
 
@@ -404,9 +413,9 @@ $\|\theta_\varepsilon^* - \theta^*\|$ ranges from $0.41$ to $0.68$ across seeds 
 Across state-space dimensions $d \in \{32, 64, 128\}$ (Exp3),
 the convergence rate of $J$ remains $80\%$ at all dimensions,
 while the smoothed bias varies ($0.597 / 0.458 / 0.661$ at $d = 32/64/128$; Fig. A6–A7).
-These results confirm that the convergence structure of $J$ is determined by the
-parameter-to-observation map rather than the system dynamics or dimension,
-while the smoothed landscape geometry reflects the interaction between
+These results indicate that the convergence structure of $J$ is governed primarily by the
+parameter-to-observation map rather than the specific system dynamics or state-space dimension,
+while the smoothed landscape geometry reflects an interplay between
 the mollifier kernel and the nonlinear rollout operator.
 
 ### **5.3.4 Mollifier Approximation and Minimizer Convergence (Exp5)**
@@ -432,8 +441,8 @@ Our framework intersects several major research areas, yet differs fundamentally
 
 ### Neural ODEs
 
-Neural ODEs embed discrete data into continuous-time differential equations [4].
-**Difference:** Neural ODEs assume *commutative* flows, whereas we model **non-commutative intervention operators**.
+Neural ODEs embed discrete data into continuous-time differential equations [4]. Extensions address irregularly sampled time series via latent ODE formulations [24], controlled differential equations for partially observed data [25], and augmented phase spaces to overcome topological limitations [26].
+**Difference:** Neural ODEs and their variants assume *commutative* flows, whereas we model **non-commutative intervention operators** that explicitly break this commutativity via the fundamental relation $U_{\Delta t} \circ E_t \neq E_{t+\Delta t} \circ U_{\Delta t}$.
 
 ### Control Theory
 
@@ -442,8 +451,8 @@ Classical control assumes smooth, differentiable dynamics [3].
 
 ### Reinforcement Learning
 
-RL optimizes sequential decisions via non-differentiable methods [1, 2].
-**Difference:** we construct **differentiable approximations** of intervention-induced observables.
+RL optimizes sequential decisions via non-differentiable methods [1, 2]. Policy gradient methods such as REINFORCE [23] and PPO [22] provide practical algorithms for discrete decision spaces. In the clinical domain, RL has been applied to sepsis treatment optimization [20] and guidelines for its safe deployment in healthcare have been proposed [21]. Dynamic treatment regimes [17, 18, 19] offer a statistical formalization of sequential treatment decisions.
+**Difference:** we construct **differentiable approximations** of intervention-induced observables, in contrast to policy gradient methods that rely on stochastic gradient estimates through non-differentiable rewards.
 
 ### Kernel Methods
 
@@ -452,8 +461,18 @@ Kernel regression smooths discrete data [9].
 
 ### Operator Learning
 
-DeepONet [10] and FNO [11] approximate operators between function spaces.
-**Difference:** existing methods assume **commutative or linear operators**, while we model **non-commutative operator algebras**.
+DeepONet [10] and FNO [11] approximate operators between function spaces. The neural operator framework [27] provides a general theory unifying these approaches, and model reduction techniques combining neural networks with operator approximation have been developed for parametric PDEs [28].
+**Difference:** existing operator learning methods assume **commutative or linear operators**, while we model **non-commutative operator algebras** and focus on the smoothing of operator-induced objective landscapes rather than operator approximation from data.
+
+### Non-Smooth Optimization
+
+Smoothing methods for non-smooth convex objectives have been developed with optimal convergence guarantees [29, 31]. Standard references on numerical optimization [30] cover the L-BFGS and quasi-Newton methods used in our experiments.
+**Difference:** our smoothing is applied to operator-induced observables in a non-convex, non-commutative setting, requiring functional-analytic tools beyond classical optimization theory.
+
+### Causality and Intervention Formalism
+
+The Pearl causal framework [40] and related structural causal models [41, 44] provide a formal language for interventions as *do*-operations that modify a system's causal graph. Non-commutative geometry [43] provides a broader algebraic framework for operator algebras in which commutativity fails at a structural level.
+**Difference:** our framework focuses specifically on the *optimization* of intervention sequences in Banach spaces, combining causal-style intervention operators with functional-analytic smoothing theory.
 
 ### Structural Comparison with Existing Paradigms
 
@@ -477,12 +496,12 @@ This comparison highlights that our framework uniquely combines:
 
 ### Summary of Novelty
 
-Our framework is the first to:
+To the best of our knowledge, the present framework is among the first to:
 
-- model **interventions as non-commutative operators**,  
-- incorporate **time evolution and time-dependent observations**,  
-- embed observables into **Banach spaces**,  
-- apply **mollifier smoothing** to enable differentiable optimization.
+- model **interventions as non-commutative operators**,
+- incorporate **time evolution and time-dependent observations**,
+- embed observables into **Banach spaces** with uniform approximation guarantees,
+- apply **mollifier smoothing** to enable differentiable optimization of non-commutative intervention sequences.
 
 ---
 
@@ -498,21 +517,21 @@ The "smooth" condition applies the mollifier proxy $\phi_\varepsilon$,
 embedding the observable into a band-limited space in which both the sup-norm
 and the gradient sup-norm are bounded — the defining property of $W^{1,\infty}$.
 
-The loss landscape visualization (§5.3.2, Fig. 07–08) shows that $J_\varepsilon$
+The loss landscape visualization (§5.3.2, Fig. 07–08) reveals that $J_\varepsilon$
 compresses the value range from $[0,\, 0.089]$ to $[0.010,\, 0.037]$ and converts
 the irregular surface of $J$ into a smooth bowl geometry,
-reflecting the mollifier’s role as $W^{1,\infty}$ regularization of the
+consistent with the mollifier’s role as $W^{1,\infty}$ regularization of the
 operator-induced landscape.
 
 ## **7.2 Gradient Regularity as Evidence for Fréchet Differentiability**
 
-The most direct numerical evidence for the Fréchet differentiability claim
-(Layer 3 of the formal verification) is provided by the gradient norm variation
-$|\Delta\|\nabla J\||$ in §5.3.1.
+Among the numerical findings reported here, the gradient norm variation
+$|\Delta\|\nabla J\||$ in §5.3.1 provides the most direct empirical evidence
+for the Fréchet differentiability claim established in Layer 3 of the formal verification.
 A Lipschitz-continuous gradient satisfies $\|\nabla J(a) - \nabla J(b)\| \leq L\|a-b\|$,
-which manifests as bounded step-to-step changes in gradient norm.
+which is expected to manifest as bounded step-to-step changes in gradient norm.
 The consistently reduced $|\Delta\|\nabla J_{\varepsilon,\text{sym}}\||$ under smooth
-conditions (Fig. 09) is therefore the most precisely matched correspondence
+conditions (Fig. 09) is accordingly the most precisely matched correspondence
 between formal proof and experiment in this study.
 
 ## **7.3 Smoothing Bias and Minimizer Convergence**
@@ -543,23 +562,23 @@ on system structure.
 ## **7.5 Second-Order Methods and the Scope of the Smoothing Benefit**
 
 A supplementary experiment (Appendix B.1) compares Adam [7] and L-BFGS [8] on both
-raw and smooth conditions.
+raw and smooth conditions, following standard practice in numerical optimization [30].
 L-BFGS [8] converges in $\leq 1$ step for all 20 initializations under both $J$ and
 $J_{\varepsilon,\text{sym}}$, approximately $307\times$ faster than Adam’s median of
 307 steps. The raw and smooth L-BFGS conditions are indistinguishable
 ($\|\theta - \theta^*\| \approx 0.001$).
 
-This clarifies the scope of the $W^{1,\infty}$ benefit:
-smoothing regularizes the gradient field for optimizers that lack curvature information.
-A quasi-Newton method implicitly achieves similar regularization through its
-Hessian approximation, making external smoothing redundant in this 2D setting.
+These results clarify the scope of the $W^{1,\infty}$ benefit:
+smoothing primarily regularizes the gradient field for optimizers that lack curvature information.
+A quasi-Newton method achieves analogous regularization implicitly through its
+Hessian approximation, rendering external smoothing redundant in the present 2D setting.
 The primary beneficiary of the Banach-space embedding is first-order
 gradient-based optimization, where the Lipschitz-continuous gradient is the
 only available curvature signal.
 As parameter dimensionality grows beyond the 2D setting used here,
 the advantage over Hessian-based methods is expected to increase.
 
-## **7.6 Honest Theoretical Assessment**
+## **7.6 Correspondence Between Theory and Experiment**
 
 | Claim | Numerical result | Status |
 |---|---|---|
@@ -567,23 +586,24 @@ the advantage over Hessian-based methods is expected to increase.
 | Corollary 2: $\theta_\varepsilon^* \to \theta^*$ as $\varepsilon \to 0$ | Monotone decrease $0.956 \to 0.471$ | Qualitative support |
 | Layer 3: Lipschitz gradient | $|\Delta\|\nabla J_{\varepsilon,\text{sym}}\||$ reduced | Quantitative evidence |
 
-The $O(\varepsilon)$ slope discrepancy in Theorem 1 is attributed to
-the discrete binomial kernel ($K_\text{min} = 3$ at $\varepsilon = 0.1$)
-and the mismatch between trajectory MAE and the $W^{1,\infty}$ norm.
-The qualitative monotonicity is consistently preserved.
+The gap between the observed slope and the theoretical $O(\varepsilon)$ prediction is attributable to
+the discrete binomial kernel ($K_\text{min} = 3$ at $\varepsilon = 0.1$),
+which prevents exploration of the true $\varepsilon \to 0$ regime,
+and to the mismatch between the trajectory MAE used for measurement and the $W^{1,\infty}$ norm assumed by the theory.
+Importantly, the qualitative monotonicity predicted by Theorem 1 is preserved throughout.
 
 ## **7.7 Limitations and Future Directions**
 
-**Discrete proxy.** The temporal convolution proxy differs from the
-parameter-space mollifier of §3.2.
-A more faithful implementation would directly smooth the parameter-to-observable map,
-which we leave for future work.
+**Discrete proxy.** The temporal convolution proxy employed in §5 differs from the
+parameter-space mollifier analyzed in §3.2.
+A more faithful implementation, in which the parameter-to-observable map is smoothed directly,
+remains an important direction for future investigation.
 
-**Low-dimensional parameters.** The $\theta \in \mathbb{R}^2$ setting is chosen
+**Low-dimensional parameters.** The $\theta \in \mathbb{R}^2$ setting was adopted
 to enable landscape visualization and exact ground-truth comparison.
-Scaling to $\theta \in \mathbb{R}^{100}$ or higher — the regime where Hessian-based
-methods become costly and first-order smoothing benefits are largest —
-is a natural next step.
+Extending the evaluation to $\theta \in \mathbb{R}^m$ for $m \gg 2$ — the regime in which Hessian-based
+methods become computationally prohibitive and the benefit of first-order smoothing is expected to be largest —
+represents a natural and important avenue for future work.
 
 **Higher-order operators.** Because $J_\varepsilon \in C^\infty$, the parameter-space
 Hessian $\nabla^2_\theta J_\varepsilon$ is well-defined, enabling curvature-based
@@ -592,21 +612,21 @@ how intervention-induced perturbations propagate through time and parameter spac
 
 ## **7.8 Positioning Relative to Related Work**
 
-Compared to neural ODEs, which achieve differentiability via commutative
-continuous-time flows, our framework explicitly models discrete non-commutative
-operator sequences and applies smoothing *after* forming the observable.
+Compared to neural ODEs [4] and their extensions for irregular time series [24, 25, 26], which achieve differentiability via commutative continuous-time flows, our framework explicitly models discrete non-commutative operator sequences and applies smoothing *after* forming the observable.
 Compared to curriculum annealing methods, our $\varepsilon \to 0$ schedule is
 grounded in the convergence guarantee of Corollary 2 rather than empirical heuristics.
-Compared to operator learning (DeepONet [10] / FNO [11]), we do not learn operators from data
+Compared to operator learning (DeepONet [10] / FNO [11] / neural operator [27] / model reduction [28]), we do not learn operators from data
 but analytically characterize the smoothing-induced landscape geometry
 with provable approximation bounds.
+Compared to DTR methods [17, 18, 19] and RL-based clinical decision support [20, 21], our framework provides differentiable gradients through the intervention-to-observable map, enabling gradient-based optimization rather than Q-learning or policy gradient estimation.
+The Nesterov smoothing paradigm [29, 31] provides the closest conceptual antecedent in optimization theory, although our setting is non-convex and non-commutative.
 
 
 ---
 
 # **8 Conclusion**
 
-We have presented a functional-analytic framework for optimizing
+We have proposed a functional-analytic framework for optimizing
 non-commutative intervention sequences by embedding intervention-induced
 observables into the Banach space $W^{1,\infty}$ and applying mollifier-based smoothing.
 
@@ -627,12 +647,12 @@ and are available at \url{https://github.com/kazuma0606/don_theory}.
 The symmetrized smoothed objective $J_{\varepsilon,\text{sym}}$ matches the convergence
 rate of the raw objective (80\%) while exhibiting markedly reduced step-to-step
 gradient variation — direct numerical evidence for the Lipschitz gradient property.
-Loss landscape visualization confirms that mollifier smoothing converts
-the irregular surface of $J$ into a smooth bowl geometry consistent with
-$W^{1,\infty}$ regularization.
-Monotone decrease of $\|\theta_\varepsilon^* - \theta^*\|$ from $0.956$ to $0.471$
-provides qualitative support for Corollary 2.
-Convergence behavior is robust across 10 dynamics generators and
+Loss landscape visualization reveals that mollifier smoothing converts
+the irregular surface of $J$ into a smooth bowl geometry, consistent with
+the $W^{1,\infty}$ regularization characterized in §3.1.
+The monotone decrease of $\|\theta_\varepsilon^* - \theta^*\|$ from $0.956$ to $0.471$
+is consistent with the qualitative prediction of Corollary 2.
+Convergence behavior is found to be robust across 10 dynamics generators and
 dimensions $d \in \{32, 64, 128\}$.
 
 **Practical implication.**
@@ -641,20 +661,34 @@ loss value but a regularization of the gradient field that makes first-order
 optimization tractable in landscapes rendered irregular by non-commutative
 operator interactions.
 This benefit is most pronounced for gradient-based methods without curvature information;
-as parameter dimensionality grows, the advantage over second-order methods increases.
+as parameter dimensionality grows, the advantage over second-order methods is expected to become more significant.
 
 **Broader significance.**
-The framework is domain-agnostic: although motivated by clinical intervention sequencing,
+The framework is domain-agnostic: although motivated by clinical intervention sequencing [17, 18, 40],
 the mathematical structure applies to any system in which discrete, order-dependent
-operations interact with continuous time evolution.
+operations interact with continuous time evolution, including robotics [42] and causal inference [41, 44].
 The Lean 4 formal verification provides machine-checked guarantees for all core claims,
-offering a level of rigor beyond standard proof-by-argument.
+offering a level of rigor beyond standard proof-by-argument. This follows the tradition of
+large-scale formal verification projects such as the Flyspeck proof of the Kepler conjecture [34]
+and advances in formally verified mathematics more broadly [35].
 
-**Future directions** include scaling to high-dimensional parameter spaces $\theta \in \mathbb{R}^m$,
+**Future directions** include extending the evaluation to high-dimensional parameter spaces $\theta \in \mathbb{R}^m$,
 replacing the discrete temporal-convolution proxy with a parameter-space mollifier
-for a tighter theory-experiment correspondence,
-and leveraging the $C^\infty$ regularity of $J_\varepsilon$ for curvature-based
+to achieve a tighter correspondence between theory and experiment,
+and exploiting the $C^\infty$ regularity of $J_\varepsilon$ for curvature-based
 and PDE-based analysis of intervention landscapes.
+
+---
+
+# **Acknowledgments**
+
+The authors received no specific funding for this work.
+
+---
+
+# **Conflict of Interest Statement**
+
+The authors declare that the research was conducted in the absence of any commercial or financial relationships that could be construed as a potential conflict of interest.
 
 ---
 
@@ -692,11 +726,61 @@ and PDE-based analysis of intervention landscapes.
 
 [16] The mathlib Community. The Lean mathematical library. In *Proceedings of the 9th ACM SIGPLAN International Conference on Certified Programs and Proofs (CPP 2020)*, pp. 367–381. ACM, New York, 2020. arXiv:1910.09336.
 
----
+[17] S. A. Murphy. Optimal dynamic treatment regimes. *Journal of the Royal Statistical Society: Series B (Statistical Methodology)*, 65(2):331–355, 2003.
 
-# **Acknowledgments**
+[18] B. Chakraborty and S. A. Murphy. Dynamic treatment regimes. *Annual Review of Statistics and Its Application*, 1:447–464, 2014.
 
-*(To be added)*
+[19] P. J. Schulte, A. A. Tsiatis, E. B. Laber, and M. Davidian. Q- and A-learning methods for estimating optimal dynamic treatment regimes. *Statistical Science*, 29(4):640–661, 2014.
+
+[20] A. Raghu, M. Komorowski, L. A. Celi, P. Szolovits, and M. Ghassemi. Continuous state-space models for optimal sepsis treatment: a deep reinforcement learning approach. In *Proceedings of the 2nd Machine Learning for Healthcare Conference (MLHC)*, volume 68, pp. 147–163. PMLR, 2017.
+
+[21] O. Gottesman, F. Johansson, M. Komorowski, A. Faisal, D. Sontag, F. Doshi-Velez, and L. A. Celi. Guidelines for reinforcement learning in healthcare. *Nature Medicine*, 25:16–18, 2019.
+
+[22] J. Schulman, F. Wolski, P. Dhariwal, A. Radford, and O. Klimov. Proximal policy optimization algorithms. arXiv:1707.06347, 2017.
+
+[23] R. J. Williams. Simple statistical gradient-following algorithms for connectionist reinforcement learning. *Machine Learning*, 8:229–256, 1992.
+
+[24] Y. Rubanova, R. T. Q. Chen, and D. Duvenaud. Latent ODEs for irregularly-sampled time series. In *Advances in Neural Information Processing Systems (NeurIPS)*, volume 32, 2019.
+
+[25] P. Kidger, J. Morrill, J. Foster, and T. Lyons. Neural controlled differential equations for irregular time series. In *Advances in Neural Information Processing Systems (NeurIPS)*, volume 33, pp. 6696–6707, 2020.
+
+[26] E. Dupont, A. Doucet, and Y. W. Teh. Augmented neural ODEs. In *Advances in Neural Information Processing Systems (NeurIPS)*, volume 32, 2019.
+
+[27] N. Kovachki, Z. Li, B. Liu, K. Azizzadenesheli, K. Bhattacharya, A. Stuart, and A. Anandkumar. Neural operator: learning maps between function spaces with applications to PDEs. *Journal of Machine Learning Research*, 24(89):1–97, 2023.
+
+[28] K. Bhattacharya, B. Hosseini, N. B. Kovachki, and A. M. Stuart. Model reduction and neural networks for parametric PDEs. *The SMAI Journal of Computational Mathematics*, 7:121–157, 2021.
+
+[29] Y. Nesterov. Smooth minimization of non-smooth functions. *Mathematical Programming*, 103(1):127–152, 2005.
+
+[30] J. Nocedal and S. J. Wright. *Numerical Optimization*. 2nd ed. Springer Series in Operations Research and Financial Engineering. Springer, New York, 2006.
+
+[31] Y. E. Nesterov. A method for solving the convex programming problem with convergence rate $O(1/k^2)$. *Soviet Mathematics Doklady*, 27:372–376, 1983.
+
+[32] A. Pazy. *Semigroups of Linear Operators and Applications to Partial Differential Equations*. Applied Mathematical Sciences, vol. 44. Springer-Verlag, New York, 1983.
+
+[33] K.-J. Engel and R. Nagel. *One-Parameter Semigroups for Linear Evolution Equations*. Graduate Texts in Mathematics, vol. 194. Springer-Verlag, Berlin, 2000.
+
+[34] T. Hales, M. Adams, G. Bauer, T. D. Dang, J. Harrison, L. T. Hoang, C. Kaliszyk, V. Magron, S. McLaughlin, T. T. Nguyen, Q. T. Nguyen, T. Nipkow, S. Obua, J. Pleso, J. Rute, A. Solovyev, T. H. A. Ta, T. N. Tran, T. D. Trieu, J. Urban, K. Vu, and R. Zumkeller. A formal proof of the Kepler conjecture. *Forum of Mathematics, Pi*, 5:e2 (29 pages), 2017.
+
+[35] J. Avigad and J. Harrison. Formally verified mathematics. *Communications of the ACM*, 57(4):66–75, 2014.
+
+[36] L. Hörmander. *The Analysis of Linear Partial Differential Operators I: Distribution Theory and Fourier Analysis*. 2nd ed. Grundlehren der mathematischen Wissenschaften, vol. 256. Springer-Verlag, Berlin, 1990.
+
+[37] J. Jumper, R. Evans, A. Pritzel, T. Green, M. Figurnov, O. Ronneberger, K. Tunyasuvunakool, R. Bates, A. Žídek, A. Potapenko, A. Bridgland, C. Meyer, S. A. A. Kohl, A. J. Ballard, A. Cowie, B. Romera-Paredes, S. Nikolov, R. Jain, J. Adler, T. Back, S. Petersen, D. Reiman, E. Clancy, M. Zielinski, M. Steinegger, M. Pacholska, T. Berghammer, S. Bodenstein, D. Silver, O. Vinyals, A. W. Senior, K. Kavukcuoglu, P. Kohli, and D. Hassabis. Highly accurate protein structure prediction with AlphaFold. *Nature*, 596:583–589, 2021.
+
+[38] A. Esteva, A. Robicquet, B. Ramsundar, V. Kuleshov, M. DePristo, K. Chou, C. Cui, G. Corrado, S. Thrun, and J. Dean. A guide to deep learning in healthcare. *Nature Medicine*, 25:24–29, 2019.
+
+[39] R. Bommasani, D. A. Hudson, E. Aditi, R. Altman, S. Arora, S. Bernstein, J. N. Bohg, A. Bosselut, E. Brunskill, E. Brynjolfsson, et al. On the opportunities and risks of foundation models. arXiv:2108.07258, 2021.
+
+[40] J. Pearl. *Causality: Models, Reasoning and Inference*. 2nd ed. Cambridge University Press, Cambridge, 2009.
+
+[41] J. Peters, D. Janzing, and B. Schölkopf. *Elements of Causal Inference: Foundations and Learning Algorithms*. MIT Press, Cambridge, MA, 2017.
+
+[42] A. Billard and D. Kragic. Trends and challenges in robot manipulation. *Science*, 364(6446):eaat8414, 2019.
+
+[43] A. Connes. *Noncommutative Geometry*. Academic Press, San Diego, CA, 1994.
+
+[44] M. A. Hernán and J. M. Robins. *Causal Inference: What If*. Chapman & Hall/CRC, Boca Raton, FL, 2020.
 
 ---
 
