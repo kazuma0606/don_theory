@@ -12,7 +12,16 @@
       "Bash(uv run:*)",
       "Bash(find /c/Users/yoshi/don_theory/visualization/img -name \"*.png\" 2>/dev/null | sort; find /c/Users/yoshi/don_theory/img -name \"*.png\" 2>/dev/null | sort)",
       "WebSearch",
-      "WebFetch(domain:arxiv.org)"
+      "WebFetch(domain:arxiv.org)",
+      "Bash(wsl -d Ubuntu-24.04 -- bash -lc \"source /home/yoshimura/miniforge3/etc/profile.d/conda.sh && conda activate sage && cd /mnt/c/Users/yoshi/don_theory/lab/wild && sage exp_W7d.sage 2>&1\" 2>&1)",
+      "Bash(wsl -d Ubuntu-24.04 -- bash -lc \"source /home/yoshimura/miniforge3/etc/profile.d/conda.sh && conda activate sage && pip install scikit-learn -q && echo done\" 2>&1)",
+      "Bash(wsl -d Ubuntu-24.04 -- bash -lc \"source /home/yoshimura/miniforge3/etc/profile.d/conda.sh && conda activate sage && cd /mnt/c/Users/yoshi/don_theory/lab/wild && sage exp_W7e.sage 2>&1\" 2>&1)",
+      "Bash(wsl -d Ubuntu-24.04 -- bash -lc \"source /home/yoshimura/miniforge3/etc/profile.d/conda.sh && conda activate sage && cd /mnt/c/Users/yoshi/don_theory/lab/wild && sage exp_W7f.sage 2>&1\" 2>&1)",
+      "Bash(wsl -d Ubuntu-24.04 -- bash -lc \"source /home/yoshimura/miniforge3/etc/profile.d/conda.sh && conda activate sage && cd /mnt/c/Users/yoshi/don_theory/lab/wild && sage exp_W7g.sage 2>&1\" 2>&1)",
+      "Bash(wsl -d Ubuntu-24.04 -- bash -lc \"source /home/yoshimura/miniforge3/etc/profile.d/conda.sh && conda activate sage && cd /mnt/c/Users/yoshi/don_theory/lab/wild && sage exp_W7h.sage 2>&1\")",
+      "Bash(wsl -d Ubuntu-24.04 -- bash -lc \"source /home/yoshimura/miniforge3/etc/profile.d/conda.sh && conda activate sage && cd /mnt/c/Users/yoshi/don_theory/lab/wild && sage exp_W7i.sage 2>&1\")",
+      "Bash(wsl -d Ubuntu-24.04 -- bash -lc \"source /home/yoshimura/miniforge3/etc/profile.d/conda.sh && conda activate sage && python -c 'import sklearn; import xgboost; print\\(\\\\\"sklearn:\\\\\", sklearn.__version__\\); print\\(\\\\\"xgboost:\\\\\", xgboost.__version__\\)' 2>&1\")",
+      "Bash(wsl -d Ubuntu-24.04 -- bash -lc \"source /home/yoshimura/miniforge3/etc/profile.d/conda.sh && conda activate sage && pip install xgboost 2>&1 | tail -5\")"
     ]
   }
 }

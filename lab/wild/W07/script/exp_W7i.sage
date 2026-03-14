@@ -1,0 +1,468 @@
+#!/usr/bin/env sage
+# exp_W7i.sage — 3段階スクリーニング: cycle type フィルタ × Burau trace
+# Stage0: mean_dist が閾値以上の cycle type を丸ごと除外
+# Stage1: 残った cycle type に比例配分
+# Stage2: 型内 direction-aware Burau ランキング
+# 比較: GlobalBurau / 2-Stage(W-7h) / 3-Stage(各閾値) / Oracle
+
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from scipy import stats
+from collections import defaultdict
+from pathlib import Path
+from sage.combinat.permutation import Permutation as SagePerm
+from itertools import permutations as iter_perms
+
+print("=" * 65)
+print("  W-7i: 3段階スクリーニング設計の検証")
+print("  Stage0: cycle type フィルタ")
+print("  Stage1: 残存 type への比例配分")
+print("  Stage2: 型内 direction-aware Burau ランキング")
+print("=" * 65)
+
+OUT = Path("/mnt/c/Users/yoshi/don_theory/lab/wild/results/W7i")
+OUT.mkdir(parents=True, exist_ok=True)
+
+# ══════════════════════════════════════════════════════════════════
+# 数値セットアップ（W-7h/g と同一 seed）
+# ══════════════════════════════════════════════════════════════════
+rng = np.random.default_rng(int(42))
+d   = 24
+A_dyn  = rng.standard_normal((d,d))*0.25;  A_dyn = A_dyn - A_dyn.T
+b_bias = rng.standard_normal(d)*0.1
+a_vec  = np.zeros(d);  a_vec[:d//4] = 1.0
+M_mat  = rng.standard_normal((d,d))*0.3
+M_mat  = M_mat / (np.linalg.norm(M_mat,2)+1e-8)
+bias_list = [rng.standard_normal(d)*(0.2+0.05*i) for i in range(4)]
+theta_star = np.array([1.0, 1.0])
+p0_master  = rng.standard_normal(d)*0.5
+N_ROUNDS = 2;  N_GRID = 25
+th1 = np.linspace(-1.0, 3.0, N_GRID)
+th2 = np.linspace(-1.0, 3.0, N_GRID)
+
+def time_ev(p): return np.tanh(A_dyn@p+b_bias)*0.5+p*0.4
+def make_ops(K):
+    return [
+        lambda p,th,_=None: p+th[0]*a_vec,
+        lambda p,th,_=None: (np.eye(d)+th[1]*M_mat)@p,
+        lambda p,th,_=None: np.tanh(p*1.2)*0.9,
+        lambda p,th,_=None: np.tanh(p*0.8+bias_list[0])*0.7,
+        lambda p,th,_=None: p*0.6+np.tanh(bias_list[1])*0.4,
+        lambda p,th,_=None: np.tanh(p+bias_list[2])*0.85,
+    ][:K]
+
+def compute_dist(order, K):
+    ops = make_ops(K);  p0 = p0_master.copy()
+    ref = list(range(K))
+    def traj(ord_, th):
+        p = p0.copy();  t = [p.copy()]
+        for _ in range(N_ROUNDS):
+            for idx in ord_:
+                p = time_ev(p);  p = ops[idx](p,th);  t.append(p.copy())
+        return np.array(t)
+    zt = traj(ref, theta_star)
+    def J(ord_, th): return float(np.mean(np.sum((traj(ord_,th)-zt)**2,axis=1)))
+    grid = np.array([[J(order,[th1[j],th2[i]]) for j in range(N_GRID)]
+                     for i in range(N_GRID)])
+    ref_g= np.array([[J(ref,  [th1[j],th2[i]]) for j in range(N_GRID)]
+                     for i in range(N_GRID)])
+    return float(np.sqrt(np.mean((grid.ravel()-ref_g.ravel())**2)))
+
+# ══════════════════════════════════════════════════════════════════
+# データ構築: K=4, K=6
+# ══════════════════════════════════════════════════════════════════
+ALL = {}
+for K in [4, 6]:
+    print(f"\n[K={K}] 全 {factorial(K)} 件のデータ構築中...")
+    BK = BraidGroup(K);  gK = list(BK.generators())
+    rows = []
+    for perm in iter_perms(range(1, K+1)):
+        sp = SagePerm(list(perm))
+        b  = BK.one()
+        for i in sp.reduced_word(): b = b * gK[i-1]
+        btr = float(b.burau_matrix()(t=QQ(1)/QQ(2)).trace())
+        ct  = str(list(sp.cycle_type()))
+        dist= compute_dist([x-1 for x in perm], K)
+        rows.append({"perm": list(perm), "label": "".join(str(x) for x in perm),
+                     "burau": btr, "writhe": len(sp.reduced_word()),
+                     "dist": dist, "ct": ct})
+    ALL[K] = rows
+    dists = [r["dist"] for r in rows]
+    print(f"  完了。dist: [{min(dists):.3f}, {max(dists):.3f}]  "
+          f"mean={np.mean(dists):.3f}")
+
+# ══════════════════════════════════════════════════════════════════
+# モデル構築（W-7h と同じ within-type 相関を計算）
+# ══════════════════════════════════════════════════════════════════
+def build_model(rows):
+    ct_groups = defaultdict(list)
+    for r in rows: ct_groups[r["ct"]].append(r)
+    model = {}
+    for ct, grp in ct_groups.items():
+        bv = np.array([r["burau"] for r in grp])
+        dv = np.array([r["dist"]  for r in grp])
+        if len(grp) >= 3:
+            rr, pp = stats.pearsonr(bv, dv)
+        else:
+            rr, pp = 0.0, 1.0
+        direction = -1 if rr > 0 else +1
+        model[ct] = {"r": rr, "p": pp, "direction": direction,
+                     "n": len(grp), "mean_dist": float(dv.mean())}
+    return model, ct_groups
+
+# ══════════════════════════════════════════════════════════════════
+# スクリーニング戦略
+# ══════════════════════════════════════════════════════════════════
+def strategy_random(rows, N, seed=0):
+    idx = np.random.default_rng(int(seed)).choice(len(rows), N, replace=False)
+    return [rows[i] for i in idx]
+
+def strategy_global_burau(rows, N):
+    # 全体の global r を確認して方向を決定
+    bv = np.array([r["burau"] for r in rows])
+    dv = np.array([r["dist"]  for r in rows])
+    global_r, _ = stats.pearsonr(bv, dv)
+    # r < 0: 高Burau → 高dist → 低distが欲しいので低Burau優先
+    # ただし慣例として W-7h と同様に「高Burau優先」のまま（降順）にする
+    # → 実は W-7h では sorted(..., key=lambda r: -r["burau"]) としていた
+    #    これは r<0 の場合、高Burau → 高dist → 悪い選択になるはずだが
+    #    実験結果では GlobalBurau が良かった。つまり「低Burau」が実は良いのでは？
+    # ここで正しく方向を修正する
+    direction = -1 if global_r > 0 else +1  # r<0 なら direction=-1 → 低Burau優先
+    return sorted(rows, key=lambda r: direction * r["burau"], reverse=True)[:N]
+
+def strategy_twostage_nofilt(rows, N, model, ct_groups):
+    """W-7h の 2段階（フィルタなし・比例配分）"""
+    total = len(rows)
+    selected = []
+    for ct, grp in ct_groups.items():
+        n_select = max(1, round(N * len(grp) / total))
+        direction = model[ct]["direction"]
+        ranked = sorted(grp, key=lambda r: direction * r["burau"], reverse=True)
+        selected.extend(ranked[:n_select])
+    if len(selected) > N:
+        selected = sorted(selected, key=lambda r: r["dist"])[:N]
+    elif len(selected) < N:
+        selected_labels = {r["label"] for r in selected}
+        remaining = [r for r in rows if r["label"] not in selected_labels]
+        np.random.default_rng(int(99)).shuffle(remaining)
+        selected.extend(remaining[:N - len(selected)])
+    return selected[:N]
+
+def strategy_threestage(rows, N, model, ct_groups, threshold_pct):
+    """
+    3段階スクリーニング:
+      Stage0: mean_dist > 全体の threshold_pct パーセンタイル の cycle type を除外
+      Stage1: 残った cycle type に比例配分（ただし最低1件は保証しない）
+      Stage2: 型内 direction-aware Burau ランキング
+    threshold_pct: 0.25, 0.50, 0.75 など
+    """
+    all_dists = np.array([r["dist"] for r in rows])
+    dist_threshold = np.percentile(all_dists, threshold_pct * 100)
+
+    # Stage0: mean_dist が閾値未満の cycle type のみ残す
+    kept_cts = {ct for ct, info in model.items()
+                if info["mean_dist"] <= dist_threshold}
+
+    # 残した型に属する全要素
+    kept_rows = [r for r in rows if r["ct"] in kept_cts]
+
+    if len(kept_rows) == 0:
+        # fallback: フィルタなし
+        kept_rows = rows
+        kept_cts = set(ct_groups.keys())
+
+    if len(kept_rows) <= N:
+        # 残余が N 以下なら全部使って足りない分は low-dist から補完
+        selected = kept_rows.copy()
+        if len(selected) < N:
+            remaining = [r for r in rows if r["ct"] not in kept_cts]
+            remaining_sorted = sorted(remaining, key=lambda r: r["dist"])
+            selected.extend(remaining_sorted[:N - len(selected)])
+        return selected[:N]
+
+    # Stage1+2: 残った型の中で比例配分 + direction-aware Burau
+    total_kept = len(kept_rows)
+    selected = []
+    for ct in kept_cts:
+        grp = ct_groups[ct]
+        n_select = max(1, round(N * len(grp) / total_kept))
+        direction = model[ct]["direction"]
+        ranked = sorted(grp, key=lambda r: direction * r["burau"], reverse=True)
+        selected.extend(ranked[:n_select])
+
+    if len(selected) > N:
+        selected = sorted(selected, key=lambda r: r["dist"])[:N]
+    elif len(selected) < N:
+        selected_labels = {r["label"] for r in selected}
+        remaining = [r for r in kept_rows if r["label"] not in selected_labels]
+        remaining_sorted = sorted(remaining, key=lambda r: r["dist"])
+        selected.extend(remaining_sorted[:N - len(selected)])
+
+    return selected[:N]
+
+def strategy_oracle(rows, N):
+    return sorted(rows, key=lambda r: r["dist"])[:N]
+
+def evaluate(selected):
+    dists = np.array([r["dist"] for r in selected])
+    return {"mean": float(dists.mean()), "std": float(dists.std())}
+
+def precision_at_N(selected, true_topN_labels):
+    sel_labels = {r["label"] for r in selected}
+    return float(len(true_topN_labels & sel_labels)) / float(len(true_topN_labels))
+
+# ══════════════════════════════════════════════════════════════════
+# 主要実験
+# ══════════════════════════════════════════════════════════════════
+print("\n[メイン比較] 各 N でのスクリーニング性能")
+print("=" * 65)
+
+THRESHOLDS = [0.25, 0.50, 0.75]
+THRESHOLD_LABELS = ["3Stg-25%", "3Stg-50%", "3Stg-75%"]
+
+results_by_K = {}
+for K in [4, 6]:
+    rows = ALL[K]
+    model, ct_groups = build_model(rows)
+    total = len(rows)
+    overall_mean = float(np.mean([r["dist"] for r in rows]))
+
+    print(f"\n  ── K={K} ({total} 通り) ──")
+    print(f"\n  [cycle type 別 mean_dist・within_r]")
+    for ct, info in sorted(model.items(), key=lambda x: x[1]["mean_dist"]):
+        sign = "↑高Burau優先" if info["direction"]==+1 else "↓低Burau優先"
+        print(f"    {ct:<25} n={info['n']:3d}  "
+              f"mean_dist={info['mean_dist']:.3f}  "
+              f"within_r={info['r']:+.3f}  {sign}")
+
+    print(f"\n  [Stage0 フィルタ閾値の確認]")
+    all_ct_means = sorted([info["mean_dist"] for info in model.values()])
+    for pct in THRESHOLDS:
+        thr = float(np.percentile([r["dist"] for r in rows], pct * 100))
+        kept = sum(1 for info in model.values() if info["mean_dist"] <= thr)
+        n_kept = sum(info["n"] for ct, info in model.items() if info["mean_dist"] <= thr)
+        print(f"    {pct*100:.0f}th pct → dist_threshold={thr:.3f}  "
+              f"kept {kept}/{len(model)} types  ({n_kept}/{total} 件)")
+
+    N_values = [3, 5, 10, 20] if K == 4 else [10, 20, 50, 100, 150]
+    N_values = [n for n in N_values if n < total]
+
+    # ヘッダー
+    hdr = f"  {'N_sel':<7}| {'Random':<14}| {'GlobalBurau':<14}| {'2-Stage':<14}"
+    for lbl in THRESHOLD_LABELS:
+        hdr += f"| {lbl:<14}"
+    hdr += "| Oracle"
+    print(f"\n{hdr}")
+    print(f"  " + "-"*( 7 + 14*(3+len(THRESHOLDS)) + 10 ))
+
+    perf = defaultdict(list)
+    for N in N_values:
+        rand_means = [evaluate(strategy_random(rows, N, seed=s))["mean"]
+                      for s in range(30)]
+        r_m = np.mean(rand_means);  r_s = np.std(rand_means)
+        gb  = evaluate(strategy_global_burau(rows, N))
+        ts  = evaluate(strategy_twostage_nofilt(rows, N, model, ct_groups))
+        oc  = evaluate(strategy_oracle(rows, N))
+
+        line = (f"  N={N:<5}| {r_m:.3f}±{r_s:.3f}  | "
+                f"{gb['mean']:.3f}±{gb['std']:.3f}  | "
+                f"{ts['mean']:.3f}±{ts['std']:.3f}  ")
+        for pct in THRESHOLDS:
+            s3 = evaluate(strategy_threestage(rows, N, model, ct_groups, pct))
+            line += f"| {s3['mean']:.3f}±{s3['std']:.3f}  "
+            perf[f"3stg_{pct}_mean"].append(s3["mean"])
+        line += f"| {oc['mean']:.3f}±{oc['std']:.3f}"
+        print(line)
+
+        perf["random_mean"].append(r_m);  perf["random_std"].append(r_s)
+        perf["global_mean"].append(gb["mean"])
+        perf["twostage_mean"].append(ts["mean"])
+        perf["oracle_mean"].append(oc["mean"])
+        perf["N"].append(N)
+
+    # Precision@N
+    print(f"\n  [Precision@N — 真の上位N件のうち何件を取れたか]")
+    hdr2 = f"  {'N_sel':<7}| {'GlobalBurau':<14}| {'2-Stage':<14}"
+    for lbl in THRESHOLD_LABELS:
+        hdr2 += f"| {lbl:<14}"
+    print(hdr2)
+    print(f"  " + "-"*(7 + 14*(2+len(THRESHOLDS))))
+    for N in N_values:
+        true_topN = {r["label"] for r in strategy_oracle(rows, N)}
+        p_gb = precision_at_N(strategy_global_burau(rows, N), true_topN)
+        p_ts = precision_at_N(strategy_twostage_nofilt(rows, N, model, ct_groups), true_topN)
+        line = f"  N={N:<5}| {p_gb:.3f}         | {p_ts:.3f}         "
+        for pct in THRESHOLDS:
+            s3 = strategy_threestage(rows, N, model, ct_groups, pct)
+            p_s3 = precision_at_N(s3, true_topN)
+            line += f"| {p_s3:.3f}         "
+        print(line)
+
+    results_by_K[K] = {"perf": perf, "model": model,
+                       "ct_groups": ct_groups, "rows": rows}
+
+# ══════════════════════════════════════════════════════════════════
+# 可視化
+# ══════════════════════════════════════════════════════════════════
+print("\n[可視化]")
+
+# ── 図1: K=6  mean_dist by cycle type（フィルタ境界を図示）──────
+K = 6
+rows   = ALL[K]
+model, ct_groups = build_model(rows)
+all_dists = np.array([r["dist"] for r in rows])
+
+ct_sorted = sorted(model.items(), key=lambda x: x[1]["mean_dist"])
+ct_labels = [item[0] for item in ct_sorted]
+ct_means  = [item[1]["mean_dist"] for item in ct_sorted]
+ct_ns     = [item[1]["n"] for item in ct_sorted]
+
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+fig.suptitle(f"W-7i: 3-Stage Screening — Cycle Type Filter Analysis (K={K})", fontsize=12)
+
+ax = axes[0]
+colors = []
+for cm in ct_means:
+    if cm <= float(np.percentile(all_dists, 25)): colors.append("#2196F3")
+    elif cm <= float(np.percentile(all_dists, 50)): colors.append("#4CAF50")
+    elif cm <= float(np.percentile(all_dists, 75)): colors.append("#FF9800")
+    else: colors.append("#F44336")
+bars = ax.barh(range(len(ct_labels)), ct_means, color=colors)
+for i, (cm, n) in enumerate(zip(ct_means, ct_ns)):
+    ax.text(cm + 0.05, i, f"n={n}", va='center', fontsize=8)
+for pct, ls, lbl in [(0.25,'--','25th'), (0.50,':','50th'), (0.75,'-.','75th')]:
+    thr = float(np.percentile(all_dists, pct*100))
+    ax.axvline(thr, ls=ls, color='gray', alpha=0.7, label=f'pct={lbl} ({thr:.2f})')
+ax.set_yticks(range(len(ct_labels)))
+ax.set_yticklabels([f"{ct}" for ct in ct_labels], fontsize=8)
+ax.set_xlabel("Mean distance within cycle type")
+ax.set_title("Cycle Type Mean Distance\n(color = which filter keeps it)")
+ax.legend(fontsize=8)
+ax.set_xlim(0, max(ct_means)*1.2)
+
+# ── 図2: K=6  N=20 のスクリーニング結果比較（箱ひげ図風）──────────
+ax = axes[1]
+N_plot = 20
+labels_plot = ["Random", "GlobalBurau", "2-Stage(W7h)",
+               "3Stg-25%", "3Stg-50%", "3Stg-75%", "Oracle"]
+means_plot = [
+    float(np.mean([evaluate(strategy_random(rows, N_plot, seed=s))["mean"]
+                   for s in range(50)])),
+    evaluate(strategy_global_burau(rows, N_plot))["mean"],
+    evaluate(strategy_twostage_nofilt(rows, N_plot, model, ct_groups))["mean"],
+    evaluate(strategy_threestage(rows, N_plot, model, ct_groups, 0.25))["mean"],
+    evaluate(strategy_threestage(rows, N_plot, model, ct_groups, 0.50))["mean"],
+    evaluate(strategy_threestage(rows, N_plot, model, ct_groups, 0.75))["mean"],
+    evaluate(strategy_oracle(rows, N_plot))["mean"],
+]
+bar_colors = ["#9E9E9E","#2196F3","#FF9800","#2196F3","#4CAF50","#FF9800","#F44336"]
+bars2 = ax.bar(range(len(labels_plot)), means_plot, color=bar_colors, alpha=0.8)
+ax.axhline(float(np.mean([r["dist"] for r in rows])), ls='--', color='black',
+           alpha=0.5, label=f"overall mean ({float(np.mean([r['dist'] for r in rows])):.2f})")
+ax.set_xticks(range(len(labels_plot)))
+ax.set_xticklabels(labels_plot, rotation=30, ha='right', fontsize=9)
+ax.set_ylabel("Mean distance of selected N orderings")
+ax.set_title(f"Strategy Comparison (K={K}, N={N_plot} / 720)")
+ax.legend(fontsize=9)
+for i, v in enumerate(means_plot):
+    ax.text(i, v + 0.05, f"{v:.3f}", ha='center', fontsize=8)
+
+plt.tight_layout()
+fig.savefig(OUT / "W7i_fig1_filter_analysis.png", dpi=120, bbox_inches="tight")
+plt.close(fig)
+print(f"  fig1 saved: {OUT / 'W7i_fig1_filter_analysis.png'}")
+
+# ── 図3: K=4 と K=6 の Precision@N カーブ ──────────────────────
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+fig.suptitle("W-7i: Precision@N — How Many True Top-N are Captured", fontsize=12)
+
+for ax_idx, K in enumerate([4, 6]):
+    rows  = ALL[K]
+    model, ct_groups = build_model(rows)
+    ax    = axes[ax_idx]
+    N_vals = [3,5,10,15,20] if K==4 else [10,20,50,100,150,200]
+    N_vals = [n for n in N_vals if n < len(rows)]
+
+    prec = {lbl: [] for lbl in ["GlobalBurau","2-Stage","3Stg-25%","3Stg-50%","3Stg-75%"]}
+    for N in N_vals:
+        true_topN = {r["label"] for r in strategy_oracle(rows, N)}
+        prec["GlobalBurau"].append(
+            precision_at_N(strategy_global_burau(rows, N), true_topN))
+        prec["2-Stage"].append(
+            precision_at_N(strategy_twostage_nofilt(rows, N, model, ct_groups), true_topN))
+        for pct, lbl in zip(THRESHOLDS, THRESHOLD_LABELS):
+            prec[lbl].append(
+                precision_at_N(strategy_threestage(rows, N, model, ct_groups, pct), true_topN))
+
+    styles = {"GlobalBurau": ("blue","o","-"),
+              "2-Stage": ("orange","s","--"),
+              "3Stg-25%": ("steelblue","^","-"),
+              "3Stg-50%": ("green","D","-"),
+              "3Stg-75%": ("red","v","-")}
+    for lbl, vals in prec.items():
+        c, mk, ls = styles[lbl]
+        ax.plot(N_vals, vals, marker=mk, ls=ls, color=c, label=lbl, alpha=0.85)
+
+    ax.set_xlabel("N (number selected)")
+    ax.set_ylabel("Precision@N")
+    ax.set_title(f"K={K} ({factorial(K)} permutations)")
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+    ax.set_ylim(0, 1.05)
+
+plt.tight_layout()
+fig.savefig(OUT / "W7i_fig2_precision_curves.png", dpi=120, bbox_inches="tight")
+plt.close(fig)
+print(f"  fig2 saved: {OUT / 'W7i_fig2_precision_curves.png'}")
+
+# ══════════════════════════════════════════════════════════════════
+# 総合サマリー
+# ══════════════════════════════════════════════════════════════════
+print("\n" + "=" * 65)
+print("  総合サマリー")
+print("=" * 65)
+
+for K in [4, 6]:
+    rows  = ALL[K]
+    model, ct_groups = build_model(rows)
+    all_dists = np.array([r["dist"] for r in rows])
+    overall_mean = float(all_dists.mean())
+
+    N_ref = 5 if K == 4 else 20
+    true_topN = {r["label"] for r in strategy_oracle(rows, N_ref)}
+
+    gb  = evaluate(strategy_global_burau(rows, N_ref))
+    ts  = evaluate(strategy_twostage_nofilt(rows, N_ref, model, ct_groups))
+    best_s3 = None; best_s3_mean = 999.0; best_pct = None
+    for pct in THRESHOLDS:
+        s3 = evaluate(strategy_threestage(rows, N_ref, model, ct_groups, pct))
+        if s3["mean"] < best_s3_mean:
+            best_s3_mean = s3["mean"]; best_s3 = s3; best_pct = pct
+    oc  = evaluate(strategy_oracle(rows, N_ref))
+
+    print(f"\n  ── K={K} ({factorial(K)} 通り, N={N_ref} 選択) ──")
+    print(f"  全体平均距離: {overall_mean:.4f}")
+    print(f"  {'Random':15}: mean≈{overall_mean:.3f}  (基準)")
+    print(f"  {'GlobalBurau':15}: mean={gb['mean']:.3f}  "
+          f"(改善率 {(1-gb['mean']/overall_mean)*100:.1f}%)")
+    print(f"  {'2-Stage(W7h)':15}: mean={ts['mean']:.3f}  "
+          f"(改善率 {(1-ts['mean']/overall_mean)*100:.1f}%)")
+    print(f"  {'3-Stage best':15}: mean={best_s3_mean:.3f}  "
+          f"(改善率 {(1-best_s3_mean/overall_mean)*100:.1f}%  pct={best_pct*100:.0f}%)")
+    print(f"  {'Oracle':15}: mean={oc['mean']:.3f}  "
+          f"(改善率 {(1-oc['mean']/overall_mean)*100:.1f}%)")
+
+    # 最良戦略の判定
+    methods = {"GlobalBurau": gb["mean"],
+               "2-Stage": ts["mean"],
+               f"3-Stage-{best_pct*100:.0f}%": best_s3_mean}
+    best_method = min(methods, key=methods.get)
+    print(f"\n  ★ 最良スクリーニング戦略: {best_method} "
+          f"(mean_dist={methods[best_method]:.3f})")
+
+print("\n" + "=" * 65)
+print(f"  W-7i 実験完了  出力先: {OUT}")
+print("=" * 65)
